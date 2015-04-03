@@ -1,4 +1,4 @@
-package com.github.t1.deployer.app;
+package com.github.t1.rest;
 
 import static java.util.Arrays.*;
 
@@ -6,16 +6,13 @@ import java.net.URI;
 import java.util.List;
 
 import lombok.Getter;
-import lombok.experimental.Accessors;
 
-import com.github.t1.deployer.app.UriTemplate.HierarchicalUriTemplate;
-
+/** Immutable, typesafe, fluent, strictly appendable builder for clients of RESTful services. */
 @Getter
-@Accessors(fluent = true)
 public class Rest {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
-    private final HierarchicalUriTemplate uri;
+    private final UriTemplate uri;
 
     // headers
 
@@ -26,7 +23,7 @@ public class Rest {
     }
 
     public Rest(String uri) {
-        this.uri = (HierarchicalUriTemplate) UriTemplate.fromString(uri);
+        this.uri = null;
         check();
     }
 
@@ -40,20 +37,19 @@ public class Rest {
     }
 
     public String scheme() {
-        return uri.scheme();
+        return null;
     }
 
     public String schemeSpecificPart() {
-        return uri.schemeSpecificPart();
+        return null;
     }
 
     public String authority() {
-        UriAuthority authority = uri.authority();
-        return (authority == null) ? null : authority.toString();
+        return null;
     }
 
     public String path() {
-        return uri.path();
+        return null;
     }
 
     public <T> T get(Class<T> type) {

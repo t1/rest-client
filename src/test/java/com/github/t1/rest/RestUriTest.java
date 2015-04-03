@@ -1,8 +1,10 @@
-package com.github.t1.deployer.app;
+package com.github.t1.rest;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
+
+import com.github.t1.rest.Rest;
 
 public class RestUriTest {
     private Rest parse(String uri) {
