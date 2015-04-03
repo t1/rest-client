@@ -33,12 +33,16 @@ public class UriTemplate {
         public Path path(String path) {
             return scheme().path(path);
         }
+
+        public Path relativePath(String path) {
+            return scheme().relativePath(path);
+        }
     }
 
-    @Value
-    public static class Path {
-        UriAuthorityTemplate authority;
-        String path;
+    public static abstract class Path {
+        public Path path(String path) {
+            return new PathElement(this, path);
+        }
 
         public Query query(String key, String value) {
             return new Query(this, true, key, value);
@@ -47,10 +51,41 @@ public class UriTemplate {
         public Fragment fragment(String fragment) {
             return query(null, null).fragment(fragment);
         }
+    }
+
+    @Value
+    @EqualsAndHashCode(callSuper = true)
+    public static class AbsolutePath extends Path {
+        UriAuthorityTemplate authority;
+        String path;
 
         @Override
         public String toString() {
             return authority + "/" + path;
+        }
+    }
+
+    @Value
+    @EqualsAndHashCode(callSuper = true)
+    public static class RelativePath extends Path {
+        UriTemplate scheme;
+        String path;
+
+        @Override
+        public String toString() {
+            return scheme + path;
+        }
+    }
+
+    @Value
+    @EqualsAndHashCode(callSuper = true)
+    public static class PathElement extends Path {
+        Path before;
+        String path;
+
+        @Override
+        public String toString() {
+            return before + "/" + path;
         }
     }
 
@@ -106,6 +141,10 @@ public class UriTemplate {
 
     public Path path(String path) {
         return authority(null).path(path);
+    }
+
+    public Path relativePath(String path) {
+        return new RelativePath(this, path);
     }
 
     public UriAuthorityTemplate authority(String authority) {

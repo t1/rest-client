@@ -5,6 +5,7 @@ import java.util.regex.*;
 import lombok.*;
 import lombok.experimental.Builder;
 
+import com.github.t1.rest.UriTemplate.AbsolutePath;
 import com.github.t1.rest.UriTemplate.Path;
 
 @RequiredArgsConstructor
@@ -107,6 +108,6 @@ public abstract class UriAuthorityTemplate {
     protected final UriTemplate scheme;
 
     public Path path(String path) {
-        return new Path(this, path);
+        return new AbsolutePath(this, path);
     }
 }

@@ -96,6 +96,20 @@ public class UriTemplateBuildTest {
     }
 
     @Test
+    public void shouldBuildRelativeFilePath() {
+        String uri = file.relativePath("path").toString();
+
+        assertEquals("file:path", uri);
+    }
+
+    @Test
+    public void shouldBuildRelativeFilePathWithTwoElements() {
+        String uri = file.relativePath("path").path("two").toString();
+
+        assertEquals("file:path/two", uri);
+    }
+
+    @Test
     public void shouldBuildWithoutQueryButFragment() {
         String uri = http.path("path").fragment("frag").toString();
 
@@ -107,6 +121,32 @@ public class UriTemplateBuildTest {
         Path path = http.path("path");
 
         assertEquals("http:/path", path.toString());
+    }
+
+    @Test
+    public void shouldBuildWithTwoPaths() {
+        Path path = http.path("path1").path("path2");
+
+        assertEquals("http:/path1/path2", path.toString());
+    }
+
+    @Test
+    public void shouldBuildWithThreePaths() {
+        Path path = http.path("path1").path("path2").path("path3");
+
+        assertEquals("http:/path1/path2/path3", path.toString());
+    }
+
+    @Test
+    public void shouldDeriveThreePaths() {
+        Path root = http.path("p");
+        Path p1 = root.path("1");
+        Path p2 = root.path("2");
+        Path p3 = root.path("3").path("4");
+
+        assertEquals("http:/p/1", p1.toString());
+        assertEquals("http:/p/2", p2.toString());
+        assertEquals("http:/p/3/4", p3.toString());
     }
 
     @Test
