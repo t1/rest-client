@@ -7,7 +7,7 @@ import java.util.List;
 
 import lombok.Getter;
 
-/** Immutable, typesafe, fluent, strictly appendable builder for clients of RESTful services. */
+/** Immutable, typesafe, fluent, strictly appendable builder for clients of RESTful web services. */
 @Getter
 public class Rest {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");

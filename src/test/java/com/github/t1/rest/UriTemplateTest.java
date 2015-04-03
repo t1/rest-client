@@ -4,7 +4,7 @@ import static com.github.t1.rest.UriTemplate.*;
 import static com.github.t1.rest.UriTemplate.Scheme.*;
 import static org.junit.Assert.*;
 
-import org.junit.*;
+import org.junit.Test;
 
 public class UriTemplateTest {
     @Test
@@ -12,6 +12,20 @@ public class UriTemplateTest {
         String uri = scheme("s").userInfo("u").host("h").port("po").path("pa").query("q", "v").fragment("f").toString();
 
         assertEquals("s://u@h:po/pa?q=v#f", uri);
+    }
+
+    @Test
+    public void shouldBuildFullFromScheme() {
+        String uri = https.userInfo("u").host("h").port("po").path("pa").query("q", "v").fragment("f").toString();
+
+        assertEquals("https://u@h:po/pa?q=v#f", uri);
+    }
+
+    @Test
+    public void shouldBuildHostFromScheme() {
+        String uri = https.host("h").port("po").path("pa").toString();
+
+        assertEquals("https://h:po/pa", uri);
     }
 
     @Test
@@ -30,9 +44,9 @@ public class UriTemplateTest {
 
     @Test
     public void shouldBuildWithAuthority() {
-        String uri = scheme("s").authority("o").path("pa").query("q", "v").fragment("f").toString();
+        String uri = scheme("s").authority("u@h:po").path("pa").query("q", "v").fragment("f").toString();
 
-        assertEquals("s://o/pa?q=v#f", uri);
+        assertEquals("s://u@h:po/pa?q=v#f", uri);
     }
 
     @Test
@@ -50,7 +64,6 @@ public class UriTemplateTest {
     }
 
     @Test
-    @Ignore("requires rework on the authority handling")
     public void shouldBuildFileWithoutAuthority() {
         String uri = file.path("path").toString();
 

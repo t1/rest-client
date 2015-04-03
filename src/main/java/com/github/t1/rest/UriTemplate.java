@@ -2,6 +2,9 @@ package com.github.t1.rest;
 
 import lombok.Value;
 
+import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate;
+import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
+
 /** Immutable, typesafe, fluent, strictly appendable builder for URI templates. */
 @Value(staticConstructor = "scheme")
 public class UriTemplate {
@@ -14,15 +17,15 @@ public class UriTemplate {
             return UriTemplate.scheme(name());
         }
 
-        public Port authority(String authority) {
+        public UriAuthorityTemplate authority(String authority) {
             return scheme().authority(authority);
         }
 
-        public UserInfo userInfo(String userInfo) {
+        public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
             return scheme().userInfo(userInfo);
         }
 
-        public Host host(String host) {
+        public HostBasedAuthorityTemplateBuilder host(String host) {
             return scheme().host(host);
         }
 
@@ -32,57 +35,8 @@ public class UriTemplate {
     }
 
     @Value
-    public static class UserInfo {
-        UriTemplate scheme;
-        String userInfo;
-
-        public Host host(String string) {
-            return new Host(this, string);
-        }
-
-        @Override
-        public String toString() {
-            return scheme + "//" + ((userInfo == null) ? "" : userInfo + "@");
-        }
-    }
-
-    @Value
-    public static class Host {
-        UserInfo userInfo;
-        String host;
-
-        public Port port(String port) {
-            return new Port(this, port);
-        }
-
-        public Path path(String path) {
-            return new Path(port(null), path);
-        }
-
-        @Override
-        public String toString() {
-            return userInfo + host;
-        }
-    }
-
-    @Value
-    public static class Port {
-        Host host;
-        String port;
-
-        public Path path(String path) {
-            return new Path(this, path);
-        }
-
-        @Override
-        public String toString() {
-            return host + ((port == null) ? "" : ":" + port);
-        }
-    }
-
-    @Value
     public static class Path {
-        Port port;
+        UriAuthorityTemplate authority;
         String path;
 
         public Query query(String key, String value) {
@@ -91,7 +45,7 @@ public class UriTemplate {
 
         @Override
         public String toString() {
-            return port + "/" + path;
+            return authority + "/" + path;
         }
     }
 
@@ -124,20 +78,20 @@ public class UriTemplate {
 
     String scheme;
 
-    public UserInfo userInfo(String userInfo) {
-        return new UserInfo(this, userInfo);
+    public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
+        return HostBasedAuthorityTemplate.builder().scheme(this).userInfo(userInfo);
     }
 
-    public Host host(String host) {
+    public HostBasedAuthorityTemplateBuilder host(String host) {
         return userInfo(null).host(host);
     }
 
     public Path path(String path) {
-        return host(null).path(path);
+        return authority(null).path(path);
     }
 
-    public Port authority(String host) {
-        return host(host).port(null);
+    public UriAuthorityTemplate authority(String authority) {
+        return UriAuthorityTemplate.authority(this, authority);
     }
 
     @Override

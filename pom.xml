@@ -6,7 +6,7 @@
   <version>1.0.0-SNAPSHOT</version>
 
   <name>Rest-Client</name>
-  <description>Fluent client API for RESTful web services</description>
+  <description>Immutable, typesafe, fluent, strictly appendable builder for clients of RESTful web services.</description>
 
 
     <properties>
