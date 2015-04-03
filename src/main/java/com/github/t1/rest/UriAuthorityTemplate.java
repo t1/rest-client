@@ -2,14 +2,14 @@ package com.github.t1.rest;
 
 import java.util.regex.*;
 
-import lombok.*;
+import lombok.Setter;
 import lombok.experimental.Builder;
 
-import com.github.t1.rest.UriTemplate.AbsolutePath;
-import com.github.t1.rest.UriTemplate.Path;
+public abstract class UriAuthorityTemplate extends UriTemplate {
+    public UriAuthorityTemplate(UriScheme previous) {
+        super(previous);
+    }
 
-@RequiredArgsConstructor
-public abstract class UriAuthorityTemplate {
     // http://www.ietf.org/rfc/rfc2396.txt
     // we don't support ip addresses and other, probably esoteric cases
     private static final Pattern HOST_BASED_PATTERN = Pattern.compile("" //
@@ -17,7 +17,7 @@ public abstract class UriAuthorityTemplate {
             + "(?<host>([\\p{Alnum}.-]*?))" //
             + "(:(?<port>.*))?");
 
-    public static UriAuthorityTemplate authority(UriTemplate scheme, String authority) {
+    public static UriAuthorityTemplate authority(UriScheme scheme, String authority) {
         if (authority == null)
             return new NullAuthority(scheme);
         Matcher matcher = HOST_BASED_PATTERN.matcher(authority);
@@ -32,43 +32,35 @@ public abstract class UriAuthorityTemplate {
     }
 
     public static class NullAuthority extends UriAuthorityTemplate {
-        public NullAuthority(UriTemplate scheme) {
+        public NullAuthority(UriScheme scheme) {
             super(scheme);
         }
 
         @Override
         public String toString() {
-            return scheme.toString();
+            return previous.toString();
         }
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = true)
     public static class RegistryBasedAuthorityTemplate extends UriAuthorityTemplate {
-        String registryName;
+        private final String registryName;
 
-        public RegistryBasedAuthorityTemplate(UriTemplate scheme, String registryName) {
+        public RegistryBasedAuthorityTemplate(UriScheme scheme, String registryName) {
             super(scheme);
             this.registryName = registryName;
         }
 
         @Override
         public String toString() {
-            return scheme + "//" + registryName;
+            return previous + "//" + registryName;
         }
     }
 
-    @Value
     @Builder
-    @EqualsAndHashCode(callSuper = true)
     public static class HostBasedAuthorityTemplate extends UriAuthorityTemplate {
         public static class HostBasedAuthorityTemplateBuilder {
-            UriTemplate scheme;
-
-            public HostBasedAuthorityTemplateBuilder scheme(UriTemplate scheme) {
-                this.scheme = scheme;
-                return this;
-            }
+            @Setter
+            UriScheme scheme;
 
             public Path path(String string) {
                 return build().path(string);
@@ -88,7 +80,7 @@ public abstract class UriAuthorityTemplate {
         String host;
         String port;
 
-        public HostBasedAuthorityTemplate(UriTemplate scheme, String userInfo, String host, String port) {
+        public HostBasedAuthorityTemplate(UriScheme scheme, String userInfo, String host, String port) {
             super(scheme);
             this.userInfo = userInfo;
             this.host = host;
@@ -97,15 +89,12 @@ public abstract class UriAuthorityTemplate {
 
         @Override
         public String toString() {
-            return scheme + "//" //
+            return previous + "//" //
                     + ((userInfo == null) ? "" : userInfo + "@") //
                     + host //
                     + ((port == null) ? "" : ":" + port);
         }
     }
-
-    @NonNull
-    protected final UriTemplate scheme;
 
     public Path path(String path) {
         return new AbsolutePath(this, path);

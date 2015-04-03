@@ -1,7 +1,7 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.UriTemplate.*;
-import static com.github.t1.rest.UriTemplate.Scheme.*;
+import static com.github.t1.rest.UriTemplate.CommonScheme.*;
+import static com.github.t1.rest.UriTemplate.UriScheme.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -165,28 +165,22 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithQuery() {
-        Path path = http.path("path");
-        Query query = path.query("key", "value");
+        Query query = http.path("path").query("key", "value");
 
-        assertEquals(path, query.path());
         assertEquals("http:/path?key=value", query.toString());
     }
 
     @Test
     public void shouldBuildWithTwoQueries() {
-        Path path = http.path("path");
-        Query query = path.query("key1", "value1").query("key2", "value2");
+        Query query = http.path("path").query("key1", "value1").query("key2", "value2");
 
-        assertEquals(path, query.path());
         assertEquals("http:/path?key1=value1&key2=value2", query.toString());
     }
 
     @Test
     public void shouldBuildWithThreeQueries() {
-        Path path = http.path("path");
-        Query query = path.query("key1", "value1").query("key2", "value2").query("key3", "value3");
+        Query query = http.path("path").query("key1", "value1").query("key2", "value2").query("key3", "value3");
 
-        assertEquals(path, query.path());
         assertEquals("http:/path?key1=value1&key2=value2&key3=value3", query.toString());
     }
 

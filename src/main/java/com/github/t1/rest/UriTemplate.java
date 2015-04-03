@@ -1,21 +1,78 @@
 package com.github.t1.rest;
 
-import static lombok.AccessLevel.*;
-import lombok.*;
+import java.util.regex.*;
+
+import lombok.RequiredArgsConstructor;
 
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate;
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
 
 /** Immutable, typesafe, fluent, strictly appendable builder for URI templates. */
-@Value(staticConstructor = "scheme")
+@RequiredArgsConstructor
 public class UriTemplate {
-    public enum Scheme {
+    private static final Pattern URI_PATTERN = Pattern
+            .compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]*):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
+
+    public static UriTemplate fromString(String uri) {
+        Matcher matcher = URI_PATTERN.matcher(uri);
+        if (!matcher.matches())
+            throw new IllegalArgumentException("unparseable uri: " + uri);
+        String schemeSpecificPart = matcher.group("schemeSpecificPart");
+        String fragment = matcher.group("fragment");
+
+        UriTemplate uriTemplate = UriScheme.scheme(matcher.group("scheme")) //
+        // .schemeSpecificPart(schemeSpecificPart)
+        ;
+        // if (fragment != null)
+        // uriTemplate.fragment(fragment);
+        return uriTemplate;
+    }
+
+    public static class UriScheme extends UriTemplate {
+        public static UriScheme scheme(String scheme) {
+            return new UriScheme(scheme);
+        }
+
+        public UriScheme(String scheme) {
+            super(null); // has no previous
+            this.scheme = scheme;
+        }
+
+        private final String scheme;
+
+        public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
+            return HostBasedAuthorityTemplate.builder().scheme(this).userInfo(userInfo);
+        }
+
+        public HostBasedAuthorityTemplateBuilder host(String host) {
+            return userInfo(null).host(host);
+        }
+
+        public Path path(String path) {
+            return authority(null).path(path);
+        }
+
+        public Path relativePath(String path) {
+            return new RelativePath(this, path);
+        }
+
+        public UriAuthorityTemplate authority(String authority) {
+            return UriAuthorityTemplate.authority(this, authority);
+        }
+
+        @Override
+        public String toString() {
+            return scheme + ":";
+        }
+    }
+
+    public enum CommonScheme {
         file,
         http,
         https;
 
-        public UriTemplate scheme() {
-            return UriTemplate.scheme(name());
+        public UriScheme scheme() {
+            return UriScheme.scheme(name());
         }
 
         public UriAuthorityTemplate authority(String authority) {
@@ -39,7 +96,11 @@ public class UriTemplate {
         }
     }
 
-    public static abstract class Path {
+    public static abstract class Path extends UriTemplate {
+        public Path(UriTemplate previous) {
+            super(previous);
+        }
+
         public Path path(String path) {
             return new PathElement(this, path);
         }
@@ -57,69 +118,75 @@ public class UriTemplate {
         }
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = true)
     public static class AbsolutePath extends Path {
-        UriAuthorityTemplate authority;
-        String path;
+        private final String path;
+
+        public AbsolutePath(UriAuthorityTemplate previous, String path) {
+            super(previous);
+            this.path = path;
+        }
 
         @Override
         public String toString() {
-            return authority + "/" + path;
+            return previous + "/" + path;
         }
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = true)
     public static class RelativePath extends Path {
-        UriTemplate scheme;
-        String path;
+        public RelativePath(UriScheme previous, String path) {
+            super(previous);
+            this.path = path;
+        }
+
+        private final String path;
 
         @Override
         public String toString() {
-            return scheme + path;
+            return previous + path;
         }
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = true)
     public static class PathElement extends Path {
-        Path before;
-        String path;
+        private final String path;
+
+        public PathElement(Path previous, String path) {
+            super(previous);
+            this.path = path;
+        }
 
         @Override
         public String toString() {
-            return before + "/" + path;
+            return previous + "/" + path;
         }
     }
 
-    @Value
-    @EqualsAndHashCode(callSuper = true)
     public static class MatrixPath extends Path {
-        Path path;
-        String key;
-        String value;
+        private final String key;
+        private final String value;
+
+        public MatrixPath(Path previous, String key, String value) {
+            super(previous);
+            this.key = key;
+            this.value = value;
+        }
 
         @Override
         public String toString() {
-            return path + ";" + key + "=" + value;
+            return previous + ";" + key + "=" + value;
         }
     }
 
-    @Value
-    public static class Query {
-        @Getter(NONE)
-        Object before;
-        @Getter(NONE)
-        boolean first;
-        String key;
-        String value;
-
-        public Path path() {
-            if (before instanceof Path)
-                return (Path) before;
-            return ((Query) before).path();
+    public static class Query extends UriTemplate {
+        public Query(UriTemplate before, boolean first, String key, String value) {
+            super(before);
+            this.first = first;
+            this.key = key;
+            this.value = value;
         }
+
+        private final boolean first;
+        private final String key;
+        private final String value;
 
         public Fragment fragment(String fragment) {
             return new Fragment(this, fragment);
@@ -131,45 +198,51 @@ public class UriTemplate {
 
         @Override
         public String toString() {
-            return before + ((key == null) ? "" : (first ? "?" : "&") + key + "=" + value);
+            return previous + ((key == null) ? "" : (first ? "?" : "&") + key + "=" + value);
         }
     }
 
-    @Value
-    public static class Fragment {
-        Query query;
-        String fragment;
+    public static class Fragment extends UriTemplate {
+        private final String fragment;
+
+        public Fragment(UriTemplate previous, String fragment) {
+            super(previous);
+            this.fragment = fragment;
+        }
 
         @Override
         public String toString() {
-            return query + "#" + fragment;
+            return previous + "#" + fragment;
         }
     }
 
-    String scheme;
+    protected final UriTemplate previous;
 
-    public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
-        return HostBasedAuthorityTemplate.builder().scheme(this).userInfo(userInfo);
+    public boolean isOpaque() {
+        return false;
     }
 
-    public HostBasedAuthorityTemplateBuilder host(String host) {
-        return userInfo(null).host(host);
+    public boolean isAbsolute() {
+        return false;
     }
 
-    public Path path(String path) {
-        return authority(null).path(path);
+    public boolean isRelative() {
+        return false;
     }
 
-    public Path relativePath(String path) {
-        return new RelativePath(this, path);
+    public boolean isHierarchical() {
+        return false;
     }
 
-    public UriAuthorityTemplate authority(String authority) {
-        return UriAuthorityTemplate.authority(this, authority);
+    public String schemeSpecificPart() {
+        return null;
     }
 
-    @Override
-    public String toString() {
-        return scheme + ":";
+    public String fragment() {
+        return null;
+    }
+
+    public String authority() {
+        return null;
     }
 }
