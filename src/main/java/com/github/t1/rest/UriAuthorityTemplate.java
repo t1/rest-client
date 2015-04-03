@@ -10,16 +10,17 @@ import com.github.t1.rest.UriTemplate.Path;
 @RequiredArgsConstructor
 public abstract class UriAuthorityTemplate {
     // http://www.ietf.org/rfc/rfc2396.txt
+    // we don't support ip addresses and other, probably esoteric cases
     private static final Pattern HOST_BASED_PATTERN = Pattern.compile("" //
             + "((?<userinfo>.*)@)?" //
-            + "(?<host>(.*?))" //
+            + "(?<host>([\\p{Alnum}.-]*?))" //
             + "(:(?<port>.*))?");
 
     public static UriAuthorityTemplate authority(UriTemplate scheme, String authority) {
         if (authority == null)
             return new NullAuthority(scheme);
         Matcher matcher = HOST_BASED_PATTERN.matcher(authority);
-        if (!matcher.matches()) // I have don't care enough to understand what this could be according to the spec
+        if (!matcher.matches())
             return new RegistryBasedAuthorityTemplate(scheme, authority);
         return HostBasedAuthorityTemplate.builder() //
                 .scheme(scheme) //
@@ -48,6 +49,11 @@ public abstract class UriAuthorityTemplate {
         public RegistryBasedAuthorityTemplate(UriTemplate scheme, String registryName) {
             super(scheme);
             this.registryName = registryName;
+        }
+
+        @Override
+        public String toString() {
+            return scheme + "//" + registryName;
         }
     }
 

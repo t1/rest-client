@@ -50,6 +50,13 @@ public class UriTemplateTest {
     }
 
     @Test
+    public void shouldBuildWithRegistryAuthority() {
+        String uri = scheme("s").authority("räg").path("pa").query("q", "v").fragment("f").toString();
+
+        assertEquals("s://räg/pa?q=v#f", uri);
+    }
+
+    @Test
     public void shouldBuildFileWithEmptyAuthority() {
         String uri = file.authority("").path("path").toString();
 
