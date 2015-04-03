@@ -110,13 +110,6 @@ public class UriTemplateBuildTest {
     }
 
     @Test
-    public void shouldBuildWithoutQueryButFragment() {
-        String uri = http.path("path").fragment("frag").toString();
-
-        assertEquals("http:/path#frag", uri);
-    }
-
-    @Test
     public void shouldBuildWithPath() {
         Path path = http.path("path");
 
@@ -150,6 +143,27 @@ public class UriTemplateBuildTest {
     }
 
     @Test
+    public void shouldBuildWithPathAndMatrix() {
+        Path path = http.path("path").matrix("key", "value");
+
+        assertEquals("http:/path;key=value", path.toString());
+    }
+
+    @Test
+    public void shouldBuildWithPathAndTwoMatrixParams() {
+        Path path = http.path("path").matrix("key1", "value1").matrix("key2", "value2");
+
+        assertEquals("http:/path;key1=value1;key2=value2", path.toString());
+    }
+
+    @Test
+    public void shouldBuildWithPathMatrixPath() {
+        Path path = http.path("path").matrix("key", "value").path("path2");
+
+        assertEquals("http:/path;key=value/path2", path.toString());
+    }
+
+    @Test
     public void shouldBuildWithQuery() {
         Path path = http.path("path");
         Query query = path.query("key", "value");
@@ -174,5 +188,12 @@ public class UriTemplateBuildTest {
 
         assertEquals(path, query.path());
         assertEquals("http:/path?key1=value1&key2=value2&key3=value3", query.toString());
+    }
+
+    @Test
+    public void shouldBuildWithoutQueryButFragment() {
+        String uri = http.path("path").fragment("frag").toString();
+
+        assertEquals("http:/path#frag", uri);
     }
 }

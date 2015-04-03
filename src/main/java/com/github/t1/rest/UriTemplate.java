@@ -51,6 +51,10 @@ public class UriTemplate {
         public Fragment fragment(String fragment) {
             return query(null, null).fragment(fragment);
         }
+
+        public Path matrix(String key, String value) {
+            return new MatrixPath(this, key, value);
+        }
     }
 
     @Value
@@ -86,6 +90,19 @@ public class UriTemplate {
         @Override
         public String toString() {
             return before + "/" + path;
+        }
+    }
+
+    @Value
+    @EqualsAndHashCode(callSuper = true)
+    public static class MatrixPath extends Path {
+        Path path;
+        String key;
+        String value;
+
+        @Override
+        public String toString() {
+            return path + ";" + key + "=" + value;
         }
     }
 
