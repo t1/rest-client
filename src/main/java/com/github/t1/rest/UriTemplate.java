@@ -1,6 +1,7 @@
 package com.github.t1.rest;
 
-import lombok.Value;
+import static lombok.AccessLevel.*;
+import lombok.*;
 
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate;
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
@@ -40,7 +41,11 @@ public class UriTemplate {
         String path;
 
         public Query query(String key, String value) {
-            return new Query(this, key, value);
+            return new Query(this, true, key, value);
+        }
+
+        public Fragment fragment(String fragment) {
+            return query(null, null).fragment(fragment);
         }
 
         @Override
@@ -51,17 +56,30 @@ public class UriTemplate {
 
     @Value
     public static class Query {
-        Path path;
+        @Getter(NONE)
+        Object before;
+        @Getter(NONE)
+        boolean first;
         String key;
         String value;
+
+        public Path path() {
+            if (before instanceof Path)
+                return (Path) before;
+            return ((Query) before).path();
+        }
 
         public Fragment fragment(String fragment) {
             return new Fragment(this, fragment);
         }
 
+        public Query query(String key, String value) {
+            return new Query(this, false, key, value);
+        }
+
         @Override
         public String toString() {
-            return path + "?" + key + "=" + value;
+            return before + ((key == null) ? "" : (first ? "?" : "&") + key + "=" + value);
         }
     }
 
