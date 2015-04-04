@@ -2,11 +2,13 @@ package com.github.t1.rest;
 
 import java.util.regex.*;
 
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Builder;
 
-public abstract class UriAuthorityTemplate extends UriTemplate {
-    public UriAuthorityTemplate(UriScheme previous) {
+import com.github.t1.rest.UriTemplate.NonPath;
+
+public abstract class UriAuthorityTemplate extends NonPath {
+    private UriAuthorityTemplate(NonAuthority previous) {
         super(previous);
     }
 
@@ -15,14 +17,24 @@ public abstract class UriAuthorityTemplate extends UriTemplate {
     private static final Pattern HOST_BASED_PATTERN = Pattern.compile("" //
             + "((?<userinfo>.*)@)?" //
             + "(?<host>([\\p{Alnum}.-]*?))" //
-            + "(:(?<port>.*))?");
+            + "(:(?<port>[^/]*))?" //
+            + "(?<more>/.*)?");
 
-    public static UriAuthorityTemplate authority(UriScheme scheme, String authority) {
-        if (authority == null)
-            return new NullAuthority(scheme);
+    public static UriAuthorityTemplate authority(NonAuthority scheme, String authority) {
         Matcher matcher = HOST_BASED_PATTERN.matcher(authority);
         if (!matcher.matches())
             return new RegistryBasedAuthorityTemplate(scheme, authority);
+        return builder(scheme, matcher);
+    }
+
+    public static NonFragment authorityAndMore(NonAuthority scheme, String authorityAndMore) {
+        Matcher matcher = HOST_BASED_PATTERN.matcher(authorityAndMore);
+        if (!matcher.matches())
+            return new RegistryBasedAuthorityTemplate(scheme, authorityAndMore);
+        return builder(scheme, matcher).pathAndMore(matcher.group("more"));
+    }
+
+    private static HostBasedAuthorityTemplate builder(NonAuthority scheme, Matcher matcher) {
         return HostBasedAuthorityTemplate.builder() //
                 .scheme(scheme) //
                 .userInfo(matcher.group("userinfo")) //
@@ -31,21 +43,10 @@ public abstract class UriAuthorityTemplate extends UriTemplate {
                 .build();
     }
 
-    public static class NullAuthority extends UriAuthorityTemplate {
-        public NullAuthority(UriScheme scheme) {
-            super(scheme);
-        }
-
-        @Override
-        public String toString() {
-            return previous.toString();
-        }
-    }
-
     public static class RegistryBasedAuthorityTemplate extends UriAuthorityTemplate {
         private final String registryName;
 
-        public RegistryBasedAuthorityTemplate(UriScheme scheme, String registryName) {
+        public RegistryBasedAuthorityTemplate(NonAuthority scheme, String registryName) {
             super(scheme);
             this.registryName = registryName;
         }
@@ -54,16 +55,30 @@ public abstract class UriAuthorityTemplate extends UriTemplate {
         public String toString() {
             return previous + "//" + registryName;
         }
+
+        @Override
+        public String get() {
+            return registryName;
+        }
     }
 
+    @Getter
     @Builder
     public static class HostBasedAuthorityTemplate extends UriAuthorityTemplate {
         public static class HostBasedAuthorityTemplateBuilder {
             @Setter
-            UriScheme scheme;
+            NonAuthority scheme;
 
-            public Path path(String string) {
-                return build().path(string);
+            public UriPath absolutePath(String string) {
+                return build().absolutePath(string);
+            }
+
+            public UriPath relativePath(String string) {
+                return build().relativePath(string);
+            }
+
+            public NonFragment pathAndMore(String string) {
+                return build().pathAndMore(string);
             }
 
             public HostBasedAuthorityTemplate build() {
@@ -80,7 +95,7 @@ public abstract class UriAuthorityTemplate extends UriTemplate {
         String host;
         String port;
 
-        public HostBasedAuthorityTemplate(UriScheme scheme, String userInfo, String host, String port) {
+        public HostBasedAuthorityTemplate(NonAuthority scheme, String userInfo, String host, String port) {
             super(scheme);
             this.userInfo = userInfo;
             this.host = host;
@@ -89,14 +104,14 @@ public abstract class UriAuthorityTemplate extends UriTemplate {
 
         @Override
         public String toString() {
-            return previous + "//" //
-                    + ((userInfo == null) ? "" : userInfo + "@") //
+            return previous + "//" + get();
+        }
+
+        @Override
+        public String get() {
+            return ((userInfo == null) ? "" : userInfo + "@") //
                     + host //
                     + ((port == null) ? "" : ":" + port);
         }
-    }
-
-    public Path path(String path) {
-        return new AbsolutePath(this, path);
     }
 }
