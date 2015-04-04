@@ -12,7 +12,7 @@ import lombok.experimental.ExtensionMethod;
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate;
 import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
 
-/** Immutable, typesafe, fluent, strictly appendable builder for URI templates. */
+/** Immutable, fluent, strictly appendable builder for URI templates. */
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 public abstract class UriTemplate {
