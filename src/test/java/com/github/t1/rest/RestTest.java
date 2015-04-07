@@ -33,12 +33,13 @@ public class RestTest {
         private int i;
     }
 
+    @Consumes(APPLICATION_JSON)
     public static class JsonMessageBodyReader implements MessageBodyReader<Pojo> {
         private final ObjectMapper mapper = new ObjectMapper();
 
         @Override
         public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return true;
+            return type != String.class;
         }
 
         @Override
@@ -67,7 +68,8 @@ public class RestTest {
 
     private final DropwizardClientRule service = new DropwizardClientRule(new MockService());
 
-    // this rule must be on a method so this bean is valid application scoped, i.e. no public fields
+    // this rule must be on a method so this bean is valid for CDI-Unit which makes it application scoped,
+    // i.e. it must not have any public fields
     @Rule
     public DropwizardClientRule service() {
         return service;

@@ -6,8 +6,11 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
+import javax.ws.rs.core.*;
+
 import lombok.Getter;
 
+import org.apache.http.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
 
@@ -76,10 +79,25 @@ public class Rest<T> {
 
     public T get() {
         HttpGet get = new HttpGet(URI.create(uri.toString()));
+        addHeaders(get);
         try (CloseableHttpResponse response = client.execute(get)) {
-            return converter.convert(response.getEntity().getContent());
+            MultivaluedMap<String, String> headers = convert(response.getAllHeaders());
+            return converter.convert(response.getEntity().getContent(), headers);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void addHeaders(HttpRequest request) {
+        for (MediaType mediaType : converter.mediaTypes()) {
+            request.addHeader("Accept", mediaType.toString());
+        }
+    }
+
+    private MultivaluedMap<String, String> convert(Header[] headers) {
+        MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
+        for (Header header : headers)
+            map.add(header.getName(), header.getValue());
+        return map;
     }
 }

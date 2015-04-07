@@ -1,15 +1,19 @@
 package com.github.t1.rest;
 
+import static javax.ws.rs.core.MediaType.*;
+
 import java.io.*;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 
+import javax.ws.rs.Consumes;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import lombok.SneakyThrows;
 
+@Consumes(TEXT_PLAIN)
 public class StringMessageBodyReader implements MessageBodyReader<Object> {
     public static String readString(InputStream in, MediaType mediaType) {
         return readFromAsString(new InputStreamReader(in, getCharset(mediaType)));
