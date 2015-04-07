@@ -6,11 +6,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 
-import lombok.*;
+import lombok.Getter;
 
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
-import org.apache.http.util.EntityUtils;
 
 import com.github.t1.rest.UriTemplate.NonFragment;
 import com.github.t1.rest.UriTemplate.UriPath;
@@ -20,7 +19,7 @@ import com.github.t1.rest.UriTemplate.UriPath;
  * <p/>
  * A REST call consists of these parts:
  * <ol>
- * <li>The configuration used for the request (esp. timeouts)</li>
+ * <li>The configuration used for the request (converters, timeouts, etc.)</li>
  * <li>The (initial) URI template where the request goes to</li>
  * <li>The headers that should be sent</li>
  * <li>The body that should be sent</li>
@@ -38,49 +37,47 @@ import com.github.t1.rest.UriTemplate.UriPath;
  * </ul>
  */
 @Getter
-public class Rest<T> implements Cloneable {
+public class Rest<T> {
     private static final CloseableHttpClient client = HttpClients.createDefault();
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
-    private NonFragment uri;
+    private final RestConfig config;
+    private final NonFragment uri;
+    private RestBodyReader<T> converter;
 
-    public Rest(URI uri) {
-        this(uri.toString());
+    public Rest(RestConfig config, String uri) {
+        this(config, check(UriTemplate.fromString(uri)), null);
     }
 
-    public Rest(String uri) {
-        this.uri = check(UriTemplate.fromString(uri));
+    private Rest(RestConfig config, NonFragment uri, RestBodyReader<T> converter) {
+        this.config = config;
+        this.uri = uri;
+        this.converter = converter;
     }
 
-    private NonFragment check(UriTemplate uri) {
+    private static NonFragment check(UriTemplate uri) {
         if (!ALLOWED_SCHEMES.contains(uri.scheme()))
             throw new RuntimeException("unsupported scheme for REST: " + uri.scheme());
         return (NonFragment) uri;
     }
 
-    @Override
-    @SuppressWarnings("unchecked")
-    @SneakyThrows(CloneNotSupportedException.class)
-    protected Rest<T> clone() {
-        return (Rest<T>) super.clone();
-    }
-
     public Rest<T> path(String path) {
-        Rest<T> clone = clone();
-        clone.uri = ((UriPath) this.uri).path(path);
-        return clone;
+        NonFragment subPath = ((UriPath) this.uri).path(path);
+        return new Rest<>(config, subPath, converter);
     }
 
-    @SuppressWarnings("unchecked")
-    public <U> Rest<U> accept(Class<U> type) {
-        // TODO find and set accept header
-        return (Rest<U>) this;
+    public <U> Rest<U> accept(Class<U> acceptedType) {
+        if (this.converter != null)
+            throw new IllegalStateException("already accepting " + this.converter + ". " //
+                    + "Can't also accept " + acceptedType);
+        RestBodyReader<U> converter = config.converterFor(acceptedType);
+        return new Rest<>(config, uri, converter);
     }
 
     public T get() {
         HttpGet get = new HttpGet(URI.create(uri.toString()));
         try (CloseableHttpResponse response = client.execute(get)) {
-            return (T) EntityUtils.toString(response.getEntity());
+            return converter.convert(response.getEntity().getContent());
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
