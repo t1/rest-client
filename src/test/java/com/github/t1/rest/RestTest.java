@@ -1,5 +1,7 @@
 package com.github.t1.rest;
 
+import static ch.qos.logback.classic.Level.*;
+import static com.github.t1.rest.StringMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
@@ -13,39 +15,83 @@ import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
+import javax.xml.bind.JAXB;
+import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.*;
 
 import org.jglue.cdiunit.*;
 import org.junit.*;
 import org.junit.runner.RunWith;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(CdiRunner.class)
-@AdditionalClasses({ RestTest.JsonMessageBodyReader.class, StringMessageBodyReader.class })
+@AdditionalClasses({ RestTest.JsonMessageBodyReader.class, RestTest.JsonPojoMessageBodyReader.class,
+        RestTest.XmlMessageBodyReader.class, StringMessageBodyReader.class })
 public class RestTest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
+    @XmlRootElement
     public static class Pojo {
         private String string;
         private int i;
     }
 
-    @Consumes(APPLICATION_JSON)
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor(access = PRIVATE)
+    public static class JsonPojo {
+        private String string;
+    }
+
+    @Consumes(APPLICATION_JSON + ";" + CHARSET_PARAMETER + "=UTF-8")
     public static class JsonMessageBodyReader implements MessageBodyReader<Pojo> {
         private final ObjectMapper mapper = new ObjectMapper();
 
         @Override
         public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class;
+            return type == Pojo.class;
         }
 
         @Override
         public Pojo readFrom(Class<Pojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
                 MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
             return mapper.readValue(entityStream, type);
+        }
+    }
+
+    @Consumes(APPLICATION_JSON + ";" + CHARSET_PARAMETER + "=UTF-8")
+    public static class JsonPojoMessageBodyReader implements MessageBodyReader<JsonPojo> {
+        private final ObjectMapper mapper = new ObjectMapper();
+
+        @Override
+        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return type == JsonPojo.class;
+        }
+
+        @Override
+        public JsonPojo readFrom(Class<JsonPojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+            return mapper.readValue(entityStream, type);
+        }
+    }
+
+    @Consumes(APPLICATION_XML)
+    public static class XmlMessageBodyReader implements MessageBodyReader<Pojo> {
+        @Override
+        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return type == Pojo.class;
+        }
+
+        @Override
+        public Pojo readFrom(Class<Pojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
+            return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), Pojo.class);
         }
     }
 
@@ -60,9 +106,14 @@ public class RestTest {
 
         @GET
         @Path("/pojo")
-        @Produces(APPLICATION_JSON)
         public Pojo pojo() {
             return new Pojo("s", 123);
+        }
+
+        @GET
+        @Path("/jsonpojo")
+        public JsonPojo jsonpojo() {
+            return new JsonPojo("json");
         }
     }
 
@@ -80,6 +131,16 @@ public class RestTest {
 
     private Rest<Object> base() {
         return rest.uri(service.baseUri());
+    }
+
+    @Before
+    public void before() {
+        setLogLevel("org.apache.http.wire", DEBUG);
+        setLogLevel("com.github.t1.rest", DEBUG);
+    }
+
+    private void setLogLevel(String loggerName, Level level) {
+        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
     }
 
     @Test(expected = RuntimeException.class)
@@ -116,5 +177,12 @@ public class RestTest {
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetJsonPojo() {
+        JsonPojo pojo = base().path("jsonpojo").accept(JsonPojo.class).get();
+
+        assertEquals("json", pojo.getString());
     }
 }

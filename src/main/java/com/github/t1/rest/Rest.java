@@ -4,11 +4,12 @@ import static java.util.Arrays.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
+import java.util.*;
 
 import javax.ws.rs.core.*;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import org.apache.http.*;
 import org.apache.http.client.methods.*;
@@ -39,20 +40,22 @@ import com.github.t1.rest.UriTemplate.UriPath;
  * <li>The body that was returned</li>
  * </ul>
  */
+@Slf4j
 @Getter
 public class Rest<T> {
+    private static final String ACCEPT_HEADER = "Accept";
     private static final CloseableHttpClient client = HttpClients.createDefault();
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
     private final RestConfig config;
     private final NonFragment uri;
-    private RestBodyReader<T> converter;
+    private BodyConverter<T> converter;
 
     public Rest(RestConfig config, String uri) {
         this(config, check(UriTemplate.fromString(uri)), null);
     }
 
-    private Rest(RestConfig config, NonFragment uri, RestBodyReader<T> converter) {
+    private Rest(RestConfig config, NonFragment uri, BodyConverter<T> converter) {
         this.config = config;
         this.uri = uri;
         this.converter = converter;
@@ -73,7 +76,7 @@ public class Rest<T> {
         if (this.converter != null)
             throw new IllegalStateException("already accepting " + this.converter + ". " //
                     + "Can't also accept " + acceptedType);
-        RestBodyReader<U> converter = config.converterFor(acceptedType);
+        BodyConverter<U> converter = config.converterFor(acceptedType);
         return new Rest<>(config, uri, converter);
     }
 
@@ -89,9 +92,14 @@ public class Rest<T> {
     }
 
     private void addHeaders(HttpRequest request) {
+        StringBuilder accept = new StringBuilder();
         for (MediaType mediaType : converter.mediaTypes()) {
-            request.addHeader("Accept", mediaType.toString());
+            if (accept.length() > 0)
+                accept.append(", ");
+            accept.append(mediaType);
         }
+        request.addHeader(ACCEPT_HEADER, accept.toString());
+        log.debug("accept: {}", Arrays.toString(request.getHeaders(ACCEPT_HEADER)));
     }
 
     private MultivaluedMap<String, String> convert(Header[] headers) {

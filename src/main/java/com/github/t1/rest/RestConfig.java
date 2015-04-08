@@ -21,17 +21,19 @@ public class RestConfig {
         return new Rest<>(this, baseUri);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
-    public <T> RestBodyReader<T> converterFor(Class<T> type) {
-        for (MessageBodyReader<T> bean : ((Iterable<MessageBodyReader<T>>) (Iterable) messageBodyReaders)) {
-            log.info("consider {} for {}", bean, type);
-            RestBodyReader<T> restBodyReader = new RestBodyReader<>(type, bean);
-            if (restBodyReader.isReadable()) {
-                return restBodyReader;
-            } else {
-                messageBodyReaders.destroy(bean);
-            }
+    public <T> BodyConverter<T> converterFor(Class<T> type) {
+        BodyConverter<T> out = new BodyConverter<>(type);
+        for (MessageBodyReader<T> bean : this.<T> readers()) {
+            log.info("consider {} for {}", bean.getClass(), type);
+            out.addIfReadable(bean);
         }
-        throw new IllegalArgumentException("no MessageBodyReader found for " + type);
+        if (!out.isReadable())
+            throw new IllegalArgumentException("no MessageBodyReader found for " + type);
+        return out;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private <T> Iterable<MessageBodyReader<T>> readers() {
+        return (Iterable) messageBodyReaders;
     }
 }
