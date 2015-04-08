@@ -1,12 +1,14 @@
 package com.github.t1.rest;
 
 import static java.util.Arrays.*;
+import static javax.ws.rs.core.Response.Status.*;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
 import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -49,13 +51,13 @@ public class Rest<T> {
 
     private final RestConfig config;
     private final NonFragment uri;
-    private BodyConverter<T> converter;
+    private RestConverter<T> converter;
 
     public Rest(RestConfig config, String uri) {
         this(config, check(UriTemplate.fromString(uri)), null);
     }
 
-    private Rest(RestConfig config, NonFragment uri, BodyConverter<T> converter) {
+    private Rest(RestConfig config, NonFragment uri, RestConverter<T> converter) {
         this.config = config;
         this.uri = uri;
         this.converter = converter;
@@ -76,19 +78,49 @@ public class Rest<T> {
         if (this.converter != null)
             throw new IllegalStateException("already accepting " + this.converter + ". " //
                     + "Can't also accept " + acceptedType);
-        BodyConverter<U> converter = config.converterFor(acceptedType);
+        RestConverter<U> converter = config.converterFor(acceptedType);
         return new Rest<>(config, uri, converter);
+    }
+
+    /**
+     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
+     * passed to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
+     * type, but it's not complete or otherwise not useful for this request.
+     */
+    public Rest<T> as(String mediaType) {
+        return as(MediaType.valueOf(mediaType));
+    }
+
+    /**
+     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
+     * passed to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
+     * type, but it's not complete or otherwise not useful for this request.
+     */
+    public Rest<T> as(MediaType mediaType) {
+        return new Rest<>(config, uri, converter.limitedTo(mediaType));
     }
 
     public T get() {
         HttpGet get = new HttpGet(URI.create(uri.toString()));
         addHeaders(get);
         try (CloseableHttpResponse response = client.execute(get)) {
+            expecting(response, OK);
             MultivaluedMap<String, String> headers = convert(response.getAllHeaders());
             return converter.convert(response.getEntity().getContent(), headers);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private void expecting(CloseableHttpResponse response, Status expectedStatus) {
+        if (!isStatus(response, expectedStatus))
+            throw new RuntimeException("expected status " + expectedStatus.getStatusCode() + " "
+                    + expectedStatus.getReasonPhrase() + " but got " + response.getStatusLine().getStatusCode() + " "
+                    + response.getStatusLine().getReasonPhrase());
+    }
+
+    private boolean isStatus(CloseableHttpResponse response, Status expected) {
+        return response.getStatusLine().getStatusCode() == expected.getStatusCode();
     }
 
     private void addHeaders(HttpRequest request) {

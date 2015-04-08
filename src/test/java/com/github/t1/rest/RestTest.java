@@ -14,7 +14,7 @@ import java.lang.reflect.Type;
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
-import javax.ws.rs.ext.MessageBodyReader;
+import javax.ws.rs.ext.*;
 import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
@@ -28,11 +28,14 @@ import org.slf4j.LoggerFactory;
 import ch.qos.logback.classic.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
 
 @RunWith(CdiRunner.class)
 @AdditionalClasses({ RestTest.JsonMessageBodyReader.class, RestTest.XmlMessageBodyReader.class,
-        StringMessageBodyReader.class })
+        RestTest.YamlMessageBodyReader.class, StringMessageBodyReader.class })
 public class RestTest {
+    public final static String APPLICATION_YAML = "application/yaml";
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
@@ -69,13 +72,50 @@ public class RestTest {
     public static class XmlMessageBodyReader implements MessageBodyReader<Object> {
         @Override
         public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class;
+            return type != String.class && type.isAnnotationPresent(XmlRootElement.class);
         }
 
         @Override
         public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
                 MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
             return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), type);
+        }
+    }
+
+    @Consumes(APPLICATION_YAML)
+    public static class YamlMessageBodyReader implements MessageBodyReader<Object> {
+        private final Yaml yaml = new Yaml();
+
+        @Override
+        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return type != String.class;
+        }
+
+        @Override
+        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
+            return yaml.load(entityStream);
+        }
+    }
+
+    @Produces(APPLICATION_YAML)
+    public static class YamlBodyWriter implements MessageBodyWriter<Object> {
+        private final Yaml yaml = new Yaml();
+
+        @Override
+        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return type != String.class;
+        }
+
+        @Override
+        public long getSize(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+            return -1;
+        }
+
+        @Override
+        public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) {
+            yaml.dump(t, new OutputStreamWriter(entityStream));
         }
     }
 
@@ -101,7 +141,7 @@ public class RestTest {
         }
     }
 
-    private final DropwizardClientRule service = new DropwizardClientRule(new MockService());
+    private final DropwizardClientRule service = new DropwizardClientRule(new MockService(), new YamlBodyWriter());
 
     // this rule must be on a method so this bean is valid for CDI-Unit which makes it application scoped,
     // i.e. it must not have any public fields
@@ -117,19 +157,30 @@ public class RestTest {
         return rest.uri(service.baseUri());
     }
 
+    private void setLogLevel(String loggerName, Level level) {
+        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
+    }
+
+    private Rest<Pojo> pojo() {
+        return base().path("pojo").accept(Pojo.class);
+    }
+
     @Before
     public void before() {
         setLogLevel("org.apache.http.wire", DEBUG);
         setLogLevel("com.github.t1.rest", DEBUG);
     }
 
-    private void setLogLevel(String loggerName, Level level) {
-        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
-    }
-
     @Test(expected = RuntimeException.class)
     public void shouldFailParsingUnsupportedScheme() {
         rest.uri("mailto:test@example.com");
+    }
+
+    @Test
+    public void shouldGetPing() {
+        String pong = base().path("ping").accept(String.class).get();
+
+        assertEquals("pong", pong);
     }
 
     @Test
@@ -149,24 +200,51 @@ public class RestTest {
     }
 
     @Test
-    public void shouldGetPing() {
-        String pong = base().path("ping").accept(String.class).get();
+    public void shouldGetJsonPojo() {
+        JsonPojo pojo = base().path("jsonpojo").accept(JsonPojo.class).get();
 
-        assertEquals("pong", pong);
+        assertEquals("json", pojo.getString());
     }
 
     @Test
-    public void shouldGetPojo() {
-        Pojo pojo = base().path("pojo").accept(Pojo.class).get();
+    public void shouldLimitTypeToSomethingConvertibleTo() {
+        base().path("jsonpojo").accept(JsonPojo.class).as(APPLICATION_JSON_TYPE);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitTypeToSomethingNotConvertibleTo() {
+        base().path("jsonpojo").accept(JsonPojo.class).as(APPLICATION_XML_TYPE);
+    }
+
+    @Test
+    public void shouldGetPojoAsAnything() {
+        Pojo pojo = pojo().get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
     }
 
     @Test
-    public void shouldGetJsonPojo() {
-        JsonPojo pojo = base().path("jsonpojo").accept(JsonPojo.class).get();
+    public void shouldGetPojoAsJson() {
+        Pojo pojo = pojo().as(APPLICATION_JSON_TYPE).get();
 
-        assertEquals("json", pojo.getString());
+        assertEquals("s", pojo.getString());
+        assertEquals(123, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsXml() {
+        Pojo pojo = pojo().as(APPLICATION_XML).get();
+
+        assertEquals("s", pojo.getString());
+        assertEquals(123, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsYaml() {
+        Pojo pojo = pojo().as(APPLICATION_YAML).get();
+
+        assertEquals("s", pojo.getString());
+        assertEquals(123, pojo.getI());
     }
 }

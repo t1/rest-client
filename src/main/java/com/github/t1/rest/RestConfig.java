@@ -21,8 +21,8 @@ public class RestConfig {
         return new Rest<>(this, baseUri);
     }
 
-    public <T> BodyConverter<T> converterFor(Class<T> type) {
-        BodyConverter<T> out = new BodyConverter<>(type);
+    public <T> RestConverter<T> converterFor(Class<T> type) {
+        RestConverter<T> out = new RestConverter<>(type);
         for (MessageBodyReader<T> bean : this.<T> readers()) {
             log.info("consider {} for {}", bean.getClass(), type);
             out.addIfReadable(bean);

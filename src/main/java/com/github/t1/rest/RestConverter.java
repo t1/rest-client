@@ -12,11 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Getter
-public class BodyConverter<T> {
+public class RestConverter<T> {
     private final Class<T> acceptedType;
     private final Map<MediaType, MessageBodyReader<T>> readers = new HashMap<>();
 
-    public BodyConverter(Class<T> acceptedType) {
+    public RestConverter(Class<T> acceptedType) {
         this.acceptedType = acceptedType;
     }
 
@@ -51,9 +51,7 @@ public class BodyConverter<T> {
     public T convert(InputStream entityStream, MultivaluedMap<String, String> headers) {
         try {
             MediaType mediaType = mediaType(headers);
-            MessageBodyReader<T> reader = readers.get(mediaType);
-            if (!isReadable(mediaType, reader))
-                throw new RuntimeException("not convertible");
+            MessageBodyReader<T> reader = converterFor(mediaType);
             return reader.readFrom(acceptedType, acceptedType, null, mediaType, headers, entityStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -69,12 +67,27 @@ public class BodyConverter<T> {
         return MediaType.valueOf(contentType);
     }
 
+    private MessageBodyReader<T> converterFor(MediaType expected) {
+        for (MediaType actual : readers.keySet())
+            if (expected.isCompatible(actual))
+                if (readers.get(actual).isReadable(acceptedType, acceptedType, null, actual))
+                    return readers.get(actual);
+        throw new IllegalArgumentException("no converter for " + expected + " found in " + this.readers.keySet());
+    }
+
     private boolean isReadable(MediaType actual, MessageBodyReader<T> reader) {
-        for (MediaType supported : mediaTypes(reader)) {
-            if (supported.isCompatible(actual)) {
-                return reader.isReadable(acceptedType, acceptedType, null, actual);
-            }
-        }
-        throw new RuntimeException("unexpectedly not convertible: " + actual);
+        if (reader != null)
+            for (MediaType supported : mediaTypes(reader))
+                if (supported.isCompatible(actual))
+                    if (reader.isReadable(acceptedType, acceptedType, null, actual))
+                        return true;
+        return false;
+    }
+
+    public RestConverter<T> limitedTo(MediaType mediaType) {
+        RestConverter<T> converter = new RestConverter<>(acceptedType);
+        MessageBodyReader<T> reader = converterFor(mediaType);
+        converter.readers.put(mediaType, reader);
+        return converter;
     }
 }
