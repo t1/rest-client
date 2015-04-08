@@ -30,8 +30,8 @@ import ch.qos.logback.classic.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @RunWith(CdiRunner.class)
-@AdditionalClasses({ RestTest.JsonMessageBodyReader.class, RestTest.JsonPojoMessageBodyReader.class,
-        RestTest.XmlMessageBodyReader.class, StringMessageBodyReader.class })
+@AdditionalClasses({ RestTest.JsonMessageBodyReader.class, RestTest.XmlMessageBodyReader.class,
+        StringMessageBodyReader.class })
 public class RestTest {
     @Data
     @AllArgsConstructor
@@ -50,48 +50,32 @@ public class RestTest {
     }
 
     @Consumes(APPLICATION_JSON + ";" + CHARSET_PARAMETER + "=UTF-8")
-    public static class JsonMessageBodyReader implements MessageBodyReader<Pojo> {
+    public static class JsonMessageBodyReader implements MessageBodyReader<Object> {
         private final ObjectMapper mapper = new ObjectMapper();
 
         @Override
         public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type == Pojo.class;
+            return type != String.class;
         }
 
         @Override
-        public Pojo readFrom(Class<Pojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-            return mapper.readValue(entityStream, type);
-        }
-    }
-
-    @Consumes(APPLICATION_JSON + ";" + CHARSET_PARAMETER + "=UTF-8")
-    public static class JsonPojoMessageBodyReader implements MessageBodyReader<JsonPojo> {
-        private final ObjectMapper mapper = new ObjectMapper();
-
-        @Override
-        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type == JsonPojo.class;
-        }
-
-        @Override
-        public JsonPojo readFrom(Class<JsonPojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
                 MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
             return mapper.readValue(entityStream, type);
         }
     }
 
     @Consumes(APPLICATION_XML)
-    public static class XmlMessageBodyReader implements MessageBodyReader<Pojo> {
+    public static class XmlMessageBodyReader implements MessageBodyReader<Object> {
         @Override
         public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type == Pojo.class;
+            return type != String.class;
         }
 
         @Override
-        public Pojo readFrom(Class<Pojo> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
                 MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
-            return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), Pojo.class);
+            return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), type);
         }
     }
 
