@@ -81,6 +81,10 @@ public abstract class UriAuthorityTemplate extends NonPath {
                 return build().pathAndMore(string);
             }
 
+            public NonFragment path(String string) {
+                return build().path(string);
+            }
+
             public HostBasedAuthorityTemplate build() {
                 return new HostBasedAuthorityTemplate(scheme, userInfo, host, port);
             }

@@ -3,7 +3,7 @@ package com.github.t1.rest;
 import static java.util.Arrays.*;
 import static javax.ws.rs.core.Response.Status.*;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URI;
 import java.util.*;
 
@@ -54,23 +54,32 @@ public class Rest<T> {
     private RestConverter<T> converter;
 
     public Rest(RestConfig config, String uri) {
-        this(config, check(UriTemplate.fromString(uri)), null);
+        this(config, UriTemplate.fromString(uri));
     }
 
-    private Rest(RestConfig config, NonFragment uri, RestConverter<T> converter) {
+    public Rest(RestConfig config, UriTemplate uri) {
+        this(config, check(uri), null);
+    }
+
+    private Rest(RestConfig config, UriTemplate uri, RestConverter<T> converter) {
         this.config = config;
-        this.uri = uri;
+        this.uri = (NonFragment) uri;
         this.converter = converter;
     }
 
-    private static NonFragment check(UriTemplate uri) {
+    private static UriTemplate check(UriTemplate uri) {
         if (!ALLOWED_SCHEMES.contains(uri.scheme()))
             throw new RuntimeException("unsupported scheme for REST: " + uri.scheme());
-        return (NonFragment) uri;
+        return uri;
     }
 
     public Rest<T> path(String path) {
         NonFragment subPath = ((UriPath) this.uri).path(path);
+        return new Rest<>(config, subPath, converter);
+    }
+
+    public Rest<T> query(String key, String value) {
+        NonFragment subPath = this.uri.query(key, value);
         return new Rest<>(config, subPath, converter);
     }
 
@@ -98,6 +107,11 @@ public class Rest<T> {
      */
     public Rest<T> as(MediaType mediaType) {
         return new Rest<>(config, uri, converter.limitedTo(mediaType));
+    }
+
+    /** short form of <code>accept(type).get()</code> */
+    public <U> U get(Class<U> type) {
+        return accept(type).get();
     }
 
     public T get() {
@@ -139,5 +153,15 @@ public class Rest<T> {
         for (Header header : headers)
             map.add(header.getName(), header.getValue());
         return map;
+    }
+
+    public InputStream getStream() {
+        // TODO stream
+        return null;
+    }
+
+    public Rest<T> header(String key, String value) {
+        // TODO header
+        return this;
     }
 }

@@ -69,6 +69,19 @@
             <optional>true</optional>
         </dependency>
         
+        <!-- compile scope -->
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.4</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-logging</artifactId>
+                    <groupId>commons-logging</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
         <!-- provided scope -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -89,17 +102,12 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- compile scope -->
+        <!-- 'optional' scope -->
         <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>4.4</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-logging</artifactId>
-                    <groupId>commons-logging</groupId>
-                </exclusion>
-            </exclusions>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.5.1</version>
+            <optional>true</optional>
         </dependency>
 
         <!-- test scope -->

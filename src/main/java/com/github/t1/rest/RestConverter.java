@@ -1,5 +1,8 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.VendorType.*;
+import static javax.ws.rs.core.MediaType.*;
+
 import java.io.*;
 import java.util.*;
 
@@ -14,10 +17,12 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 public class RestConverter<T> {
     private final Class<T> acceptedType;
+    private final VendorType vendorType;
     private final Map<MediaType, MessageBodyReader<T>> readers = new HashMap<>();
 
     public RestConverter(Class<T> acceptedType) {
         this.acceptedType = acceptedType;
+        this.vendorType = acceptedType.getAnnotation(VendorType.class);
     }
 
     public boolean isReadable() {
@@ -29,9 +34,10 @@ public class RestConverter<T> {
     }
 
     public void addIfReadable(MessageBodyReader<T> reader) {
-        for (MediaType mediaType : mediaTypes(reader)) {
+        for (MediaType rawMediaType : mediaTypes(reader)) {
+            MediaType mediaType = vendored(rawMediaType);
             if (isReadable(mediaType, reader)) {
-                log.debug("{} can convert {} from {}", reader.getClass(), mediaType, acceptedType);
+                log.debug("{} can convert {} to {}", reader.getClass(), mediaType, acceptedType);
                 readers.put(mediaType, reader);
             }
         }
@@ -43,9 +49,26 @@ public class RestConverter<T> {
         if (consumes != null)
             for (String mediaType : consumes.value())
                 list.add(MediaType.valueOf(mediaType));
-        if (list.isEmpty())
-            log.warn("no media type annotation (@Consumes) found on " + bean.getClass());
+        if (list.isEmpty()) {
+            log.debug("no media type annotation (@Consumes) found on {}; fallback to wildcard", bean.getClass());
+            list.add(WILDCARD_TYPE);
+        }
         return list;
+    }
+
+    private MediaType vendored(MediaType mediaType) {
+        if (vendorType == null)
+            return mediaType;
+        MediaType result = new MediaType("application", "vnd." + vendorTypeString() + "+" + mediaType.getSubtype());
+        log.debug("use vendor type {} for {}", result, mediaType);
+        return result;
+    }
+
+    private String vendorTypeString() {
+        String vendorTypeValue = vendorType.value();
+        if (USE_CLASS_NAME.equals(vendorTypeValue))
+            vendorTypeValue = acceptedType.getName();
+        return vendorTypeValue;
     }
 
     public T convert(InputStream entityStream, MultivaluedMap<String, String> headers) {
@@ -78,7 +101,7 @@ public class RestConverter<T> {
     private boolean isReadable(MediaType actual, MessageBodyReader<T> reader) {
         if (reader != null)
             for (MediaType supported : mediaTypes(reader))
-                if (supported.isCompatible(actual))
+                if (vendored(supported).isCompatible(actual))
                     if (reader.isReadable(acceptedType, acceptedType, null, actual))
                         return true;
         return false;

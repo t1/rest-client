@@ -1,4 +1,4 @@
-package com.github.t1.rest;
+package com.github.t1.rest.fallback;
 
 import static javax.ws.rs.core.MediaType.*;
 
@@ -7,14 +7,16 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 
+import javax.enterprise.inject.Alternative;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import lombok.SneakyThrows;
 
+@Alternative
 @Consumes(TEXT_PLAIN)
-public class StringMessageBodyReader implements MessageBodyReader<Object> {
+public class StringMessageBodyReader implements MessageBodyReader<String> {
     public static String readString(InputStream in, MediaType mediaType) {
         return readFromAsString(new InputStreamReader(in, getCharset(mediaType)));
     }
@@ -45,7 +47,7 @@ public class StringMessageBodyReader implements MessageBodyReader<Object> {
     }
 
     @Override
-    public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+    public String readFrom(Class<String> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
         return readString(entityStream, mediaType);
     }

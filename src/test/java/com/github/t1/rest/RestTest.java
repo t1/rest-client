@@ -1,21 +1,14 @@
 package com.github.t1.rest;
 
 import static ch.qos.logback.classic.Level.*;
-import static com.github.t1.rest.StringMessageBodyReader.*;
+import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 
-import java.io.*;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
-
 import javax.inject.Inject;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
-import javax.ws.rs.ext.*;
-import javax.xml.bind.JAXB;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.*;
@@ -27,15 +20,12 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.*;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
+import com.github.t1.rest.fallback.*;
 
 @RunWith(CdiRunner.class)
-@AdditionalClasses({ RestTest.JsonMessageBodyReader.class, RestTest.XmlMessageBodyReader.class,
-        RestTest.YamlMessageBodyReader.class, StringMessageBodyReader.class })
+@ActivatedAlternatives({ JsonMessageBodyReader.class, XmlMessageBodyReader.class, YamlMessageBodyReader.class,
+        StringMessageBodyReader.class })
 public class RestTest {
-    public final static String APPLICATION_YAML = "application/yaml";
-
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
@@ -45,78 +35,29 @@ public class RestTest {
         private int i;
     }
 
+    @VendorType("foo")
+    @XmlRootElement
+    @NoArgsConstructor(access = PRIVATE)
+    public static class FooVendorTypePojo extends Pojo {
+        public FooVendorTypePojo(String string, int i) {
+            super(string, i);
+        }
+    }
+
+    @VendorType
+    @XmlRootElement
+    @NoArgsConstructor(access = PRIVATE)
+    public static class DefaultVendorTypePojo extends Pojo {
+        public DefaultVendorTypePojo(String string, int i) {
+            super(string, i);
+        }
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
     public static class JsonPojo {
         private String string;
-    }
-
-    @Consumes(APPLICATION_JSON + ";" + CHARSET_PARAMETER + "=UTF-8")
-    public static class JsonMessageBodyReader implements MessageBodyReader<Object> {
-        private final ObjectMapper mapper = new ObjectMapper();
-
-        @Override
-        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class;
-        }
-
-        @Override
-        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-            return mapper.readValue(entityStream, type);
-        }
-    }
-
-    @Consumes(APPLICATION_XML)
-    public static class XmlMessageBodyReader implements MessageBodyReader<Object> {
-        @Override
-        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class && type.isAnnotationPresent(XmlRootElement.class);
-        }
-
-        @Override
-        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
-            return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), type);
-        }
-    }
-
-    @Consumes(APPLICATION_YAML)
-    public static class YamlMessageBodyReader implements MessageBodyReader<Object> {
-        private final Yaml yaml = new Yaml();
-
-        @Override
-        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class;
-        }
-
-        @Override
-        public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
-            return yaml.load(entityStream);
-        }
-    }
-
-    @Produces(APPLICATION_YAML)
-    public static class YamlBodyWriter implements MessageBodyWriter<Object> {
-        private final Yaml yaml = new Yaml();
-
-        @Override
-        public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return type != String.class;
-        }
-
-        @Override
-        public long getSize(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-            return -1;
-        }
-
-        @Override
-        public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) {
-            yaml.dump(t, new OutputStreamWriter(entityStream));
-        }
     }
 
     @Path("/")
@@ -139,9 +80,22 @@ public class RestTest {
         public JsonPojo jsonpojo() {
             return new JsonPojo("json");
         }
+
+        @GET
+        @Path("/foopojo")
+        public FooVendorTypePojo foopojo() {
+            return new FooVendorTypePojo("f", 345);
+        }
+
+        @GET
+        @Path("/vpojo")
+        public DefaultVendorTypePojo vpojo() {
+            return new DefaultVendorTypePojo("v", 456);
+        }
     }
 
-    private final DropwizardClientRule service = new DropwizardClientRule(new MockService(), new YamlBodyWriter());
+    private final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
+            new YamlMessageBodyWriter());
 
     // this rule must be on a method so this bean is valid for CDI-Unit which makes it application scoped,
     // i.e. it must not have any public fields
@@ -201,7 +155,7 @@ public class RestTest {
 
     @Test
     public void shouldGetJsonPojo() {
-        JsonPojo pojo = base().path("jsonpojo").accept(JsonPojo.class).get();
+        JsonPojo pojo = base().path("jsonpojo").get(JsonPojo.class);
 
         assertEquals("json", pojo.getString());
     }
@@ -246,5 +200,44 @@ public class RestTest {
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsFooVendorType() {
+        FooVendorTypePojo pojo =
+                base().path("foopojo").accept(FooVendorTypePojo.class).as("application/vnd.foo+json").get();
+
+        assertEquals("f", pojo.getString());
+        assertEquals(345, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsDefaultVendorTypeJson() {
+        DefaultVendorTypePojo pojo =
+                base().path("vpojo").accept(DefaultVendorTypePojo.class)
+                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json").get();
+
+        assertEquals("v", pojo.getString());
+        assertEquals(456, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsDefaultVendorTypeXml() {
+        DefaultVendorTypePojo pojo =
+                base().path("vpojo").accept(DefaultVendorTypePojo.class)
+                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml").get();
+
+        assertEquals("v", pojo.getString());
+        assertEquals(456, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoAsDefaultVendorTypeYaml() {
+        DefaultVendorTypePojo pojo =
+                base().path("vpojo").accept(DefaultVendorTypePojo.class)
+                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml").get();
+
+        assertEquals("v", pojo.getString());
+        assertEquals(456, pojo.getI());
     }
 }

@@ -136,6 +136,10 @@ public abstract class UriTemplate {
         }
 
         public NonFragment pathAndMore(String path) {
+            return path(path); // TODO more: query
+        }
+
+        public NonFragment path(String path) {
             if (path == null)
                 return this;
             boolean isAbsolute = path.startsWith("/");
@@ -144,9 +148,9 @@ public abstract class UriTemplate {
             List<String> split = split(path);
             UriPath result;
             if (isAbsolute)
-                result = new AbsolutePath(this, split.head());
+                result = absolutePath(split.head());
             else
-                result = new RelativePath(this, split.head());
+                result = relativePath(split.head());
             return result.path(split.tail());
         }
 
@@ -270,6 +274,7 @@ public abstract class UriTemplate {
             super(previous);
         }
 
+        @Override
         public Query query(String key, String value) {
             return new Query(this, key, value);
         }
@@ -285,6 +290,7 @@ public abstract class UriTemplate {
         private final String key;
         private final String value;
 
+        @Override
         public Query query(String key, String value) {
             return new Query(this, key, value);
         }
@@ -312,6 +318,8 @@ public abstract class UriTemplate {
         public Fragment fragment(String fragment) {
             return new Fragment(this, fragment);
         }
+
+        public abstract NonFragment query(String key, String value);
     }
 
     public static class Fragment extends UriTemplate {
