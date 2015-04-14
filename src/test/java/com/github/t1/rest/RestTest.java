@@ -9,6 +9,7 @@ import io.dropwizard.testing.junit.DropwizardClientRule;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.*;
@@ -107,16 +108,8 @@ public class RestTest {
     @Inject
     RestConfig rest = new RestConfig();
 
-    private Rest<Object> base() {
-        return rest.uri(service.baseUri());
-    }
-
-    private void setLogLevel(String loggerName, Level level) {
-        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
-    }
-
-    private Rest<Pojo> pojo() {
-        return base().path("pojo").accept(Pojo.class);
+    private RestResource base() {
+        return new RestResource(service.baseUri());
     }
 
     @Before
@@ -125,9 +118,19 @@ public class RestTest {
         setLogLevel("com.github.t1.rest", DEBUG);
     }
 
+    private void setLogLevel(String loggerName, Level level) {
+        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
+    }
+
+    @SuppressWarnings("deprecation")
+    private <T> TypedRestRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
+        return base().path(path).accept(type, mediaType);
+    }
+
+    @SuppressWarnings("unused")
     @Test(expected = RuntimeException.class)
     public void shouldFailParsingUnsupportedScheme() {
-        rest.uri("mailto:test@example.com");
+        new RestResource("mailto:test@example.com");
     }
 
     @Test
@@ -138,19 +141,18 @@ public class RestTest {
     }
 
     @Test
+    public void shouldGetDirectPing() {
+        String pong = base().path("ping").get(String.class);
+
+        assertEquals("pong", pong);
+    }
+
+    @Test
     public void shouldAcceptType() {
-        Rest<Object> base = base();
-        Rest<Pojo> rest = base.accept(Pojo.class);
+        RestResource base = base();
+        TypedRestRequest<Pojo> rest = base.accept(Pojo.class);
 
-        assertNull(base.converter());
         assertEquals(Pojo.class, rest.converter().acceptedType());
-
-        try {
-            rest.accept(String.class);
-            fail("IllegalStateException expected");
-        } catch (IllegalStateException e) {
-            // fine
-        }
     }
 
     @Test
@@ -161,26 +163,28 @@ public class RestTest {
     }
 
     @Test
-    public void shouldLimitTypeToSomethingConvertibleTo() {
-        base().path("jsonpojo").accept(JsonPojo.class).as(APPLICATION_JSON_TYPE);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldFailToLimitTypeToSomethingNotConvertibleTo() {
-        base().path("jsonpojo").accept(JsonPojo.class).as(APPLICATION_XML_TYPE);
-    }
-
-    @Test
     public void shouldGetPojoAsAnything() {
-        Pojo pojo = pojo().get();
+        Pojo pojo = base().path("pojo").accept(Pojo.class).get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
     }
 
     @Test
+    public void shouldLimitTypeToSomethingConvertibleTo() {
+        baseAccept("jsonpojo", JsonPojo.class, APPLICATION_JSON_TYPE);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToLimitTypeToSomethingNotConvertibleTo() {
+        baseAccept("jsonpojo", JsonPojo.class, APPLICATION_XML_TYPE);
+    }
+
+    @Test
     public void shouldGetPojoAsJson() {
-        Pojo pojo = pojo().as(APPLICATION_JSON_TYPE).get();
+        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
+
+        Pojo pojo = request.get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -188,7 +192,9 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsXml() {
-        Pojo pojo = pojo().as(APPLICATION_XML).get();
+        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
+
+        Pojo pojo = request.get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -196,7 +202,9 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsYaml() {
-        Pojo pojo = pojo().as(APPLICATION_YAML).get();
+        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
+
+        Pojo pojo = request.get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -204,8 +212,10 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsFooVendorType() {
-        FooVendorTypePojo pojo =
-                base().path("foopojo").accept(FooVendorTypePojo.class).as("application/vnd.foo+json").get();
+        MediaType vendorType = MediaType.valueOf("application/vnd.foo+json");
+        TypedRestRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
+
+        FooVendorTypePojo pojo = request.get();
 
         assertEquals("f", pojo.getString());
         assertEquals(345, pojo.getI());
@@ -213,9 +223,10 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsDefaultVendorTypeJson() {
-        DefaultVendorTypePojo pojo =
-                base().path("vpojo").accept(DefaultVendorTypePojo.class)
-                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json").get();
+        MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json");
+        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+
+        DefaultVendorTypePojo pojo = request.get();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
@@ -223,9 +234,10 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsDefaultVendorTypeXml() {
-        DefaultVendorTypePojo pojo =
-                base().path("vpojo").accept(DefaultVendorTypePojo.class)
-                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml").get();
+        MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml");
+        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+
+        DefaultVendorTypePojo pojo = request.get();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
@@ -233,9 +245,10 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsDefaultVendorTypeYaml() {
-        DefaultVendorTypePojo pojo =
-                base().path("vpojo").accept(DefaultVendorTypePojo.class)
-                        .as("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml").get();
+        MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml");
+        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+
+        DefaultVendorTypePojo pojo = request.get();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());

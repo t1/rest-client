@@ -18,26 +18,22 @@ import lombok.extern.slf4j.Slf4j;
 public class RestConverter<T> {
     private final Class<T> acceptedType;
     private final VendorType vendorType;
-    private final Map<MediaType, MessageBodyReader<T>> readers = new HashMap<>();
+    private final Map<MediaType, MessageBodyReader<T>> readers = new LinkedHashMap<>();
 
     public RestConverter(Class<T> acceptedType) {
         this.acceptedType = acceptedType;
         this.vendorType = acceptedType.getAnnotation(VendorType.class);
     }
 
-    public boolean isReadable() {
-        return !readers.isEmpty();
+    public List<MediaType> mediaTypes() {
+        return new ArrayList<>(readers.keySet());
     }
 
-    public Set<MediaType> mediaTypes() {
-        return readers.keySet();
-    }
-
-    public void addIfReadable(MessageBodyReader<T> reader) {
+    void addIfReadable(MessageBodyReader<T> reader, MediaType limitedType) {
         log.info("consider {} for {}:{}", reader.getClass(), acceptedType, vendorType);
         for (MediaType rawMediaType : mediaTypes(reader)) {
             MediaType mediaType = vendored(rawMediaType);
-            if (isReadable(mediaType, reader)) {
+            if (isReadable(mediaType, reader, limitedType)) {
                 log.debug("{} can convert {} to {}", reader.getClass(), mediaType, acceptedType);
                 readers.put(mediaType, reader);
             }
@@ -99,19 +95,19 @@ public class RestConverter<T> {
         throw new IllegalArgumentException("no converter for " + expected + " found in " + this.readers.keySet());
     }
 
-    private boolean isReadable(MediaType actual, MessageBodyReader<T> reader) {
+    private boolean isReadable(MediaType actual, MessageBodyReader<T> reader, MediaType limitedType) {
         if (reader != null)
             for (MediaType supported : mediaTypes(reader))
                 if (vendored(supported).isCompatible(actual))
                     if (reader.isReadable(acceptedType, acceptedType, null, actual))
-                        return true;
+                        if (limitedType == null || limitedType.isCompatible(vendored(supported)))
+                            return true;
         return false;
     }
 
-    public RestConverter<T> limitedTo(MediaType mediaType) {
-        RestConverter<T> converter = new RestConverter<>(acceptedType);
-        MessageBodyReader<T> reader = converterFor(mediaType);
-        converter.readers.put(mediaType, reader);
-        return converter;
+    @Override
+    public String toString() {
+        return "Converter for " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) + " using "
+                + readers.values();
     }
 }

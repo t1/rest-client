@@ -17,6 +17,7 @@ import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
 @Consumes(APPLICATION_YAML)
 public class YamlMessageBodyReader implements MessageBodyReader<Object> {
     public final static String APPLICATION_YAML = "application/yaml";
+    public final static MediaType APPLICATION_YAML_TYPE = MediaType.valueOf(APPLICATION_YAML);
 
     private final Yaml yaml = new Yaml();
 

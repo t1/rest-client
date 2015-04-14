@@ -3,6 +3,7 @@ package com.github.t1.rest;
 import static java.util.Arrays.*;
 import static lombok.AccessLevel.*;
 
+import java.net.URI;
 import java.util.List;
 import java.util.regex.*;
 
@@ -430,7 +431,12 @@ public abstract class UriTemplate {
         return findPartString(Fragment.class);
     }
 
+    /** the string version of this part; for the complete uri, call {@link #toString()} or {@link #toUri()}. */
     public abstract String get();
+
+    public URI toUri() {
+        return URI.create(toString());
+    }
 
     @Override
     public abstract String toString();
