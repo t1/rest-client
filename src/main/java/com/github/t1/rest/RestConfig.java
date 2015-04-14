@@ -1,8 +1,7 @@
 package com.github.t1.rest;
 
-import static java.util.Arrays.*;
-
 import java.net.URI;
+import java.util.*;
 
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
@@ -32,7 +31,6 @@ public class RestConfig {
     public <T> RestConverter<T> converterFor(Class<T> type) {
         RestConverter<T> out = new RestConverter<>(type);
         for (MessageBodyReader<T> bean : this.<T> readers()) {
-            log.info("consider {} for {}", bean.getClass(), type);
             out.addIfReadable(bean);
         }
         if (!out.isReadable())
@@ -42,9 +40,23 @@ public class RestConfig {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private <T> Iterable<MessageBodyReader<T>> readers() {
-        if (messageBodyReaders != null)
+        if (messageBodyReaders == null) {
+            log.debug("no messageBodyReaders set, probably CDI is not available; use fallback readers");
+        } else if (!messageBodyReaders.iterator().hasNext()) {
+            log.debug("messageBodyReaders is set, but empty; use fallback readers");
+        } else {
             return (Iterable) messageBodyReaders;
-        log.debug("no messageBodyReaders set, probably CDI is not available; use fallback readers");
-        return (Iterable) asList(new JsonMessageBodyReader(), new XmlMessageBodyReader(), new YamlMessageBodyReader());
+        }
+        List<MessageBodyReader<?>> out = new ArrayList<>();
+        out.add(new JsonMessageBodyReader());
+        out.add(new XmlMessageBodyReader());
+        try {
+            out.add(new YamlMessageBodyReader());
+        } catch (NoClassDefFoundError e) {
+            if (!"com/fasterxml/jackson/dataformat/yaml/snakeyaml/Yaml".equals(e.getMessage()))
+                throw e;
+            log.debug("Yaml not found; ignore");
+        }
+        return (List) out;
     }
 }
