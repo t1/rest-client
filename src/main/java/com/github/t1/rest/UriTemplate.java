@@ -505,6 +505,10 @@ public abstract class UriTemplate {
 
     public abstract UriTemplate with(String name, Object value);
 
+    public List<String> variables() {
+        return toString().variables();
+    }
+
     /** the string version of this part; for the complete uri, call {@link #toString()} or {@link #toUri()}. */
     public abstract String get();
 

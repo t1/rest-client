@@ -1,13 +1,20 @@
 package com.github.t1.rest;
 
+import static java.util.Arrays.*;
 import static org.junit.Assert.*;
+
+import java.util.List;
 
 import org.junit.*;
 
 public class UriTemplateVariableTest {
     @Test
     public void shouldFindTemplateVariables() {
-        // TODO
+        UriTemplate template = UriTemplate.fromString("{s}://{u}@{h}:{po}/{pa};{mk}={mv}?{qk}={qv}#{f}");
+
+        List<String> variables = template.variables();
+
+        assertEquals(asList("s", "u", "h", "po", "pa", "mk", "mv", "qk", "qv", "f"), variables);
     }
 
     @Test
