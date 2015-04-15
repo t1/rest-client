@@ -60,7 +60,7 @@ public class UriTemplateParseTest {
     /** we consider an empty authority as in 'file:///' to be empty, not null */
     private String toAuthority(URI uri) {
         String authority = uri.getAuthority();
-        if (authority == null && uri.toString().contains("//"))
+        if (authority == null && uri.toString().contains("///"))
             return "";
         return authority;
     }
@@ -68,7 +68,7 @@ public class UriTemplateParseTest {
     /** we consider an empty host as in 'file:///' to be empty, not null */
     private String toHost(URI uri) {
         String host = uri.getHost();
-        if (host == null && uri.toString().contains("//"))
+        if (host == null && uri.toString().contains("///"))
             return "";
         return host;
     }
@@ -179,8 +179,23 @@ public class UriTemplateParseTest {
     }
 
     @Test
-    public void shouldParseHierachicalUriWithAuthority() {
+    public void shouldParseHierachicalUriWithHostBasedAuthority() {
         convert("http://java.sun.com/j2se/1.3").isHierarchical();
+    }
+
+    @Test
+    public void shouldParseHierachicalUriWithRegistryBasedAuthority() {
+        convert("http://häg").isHierarchical();
+    }
+
+    @Test
+    public void shouldParseHierachicalUriWithRegistryBasedAuthorityAndPath() {
+        convert("http://häg/j2se/1.3").isHierarchical();
+    }
+
+    @Test
+    public void shouldParseHierachicalUriWithRegistryBasedAuthorityWithFragment() {
+        convert("http://häg#123").isHierarchical();
     }
 
     @Test

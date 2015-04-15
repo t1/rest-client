@@ -10,15 +10,15 @@ import java.util.regex.*;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.ExtensionMethod;
 
-import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate;
-import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
+import com.github.t1.rest.UriAuthority.HostBasedAuthority;
+import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
 
 /** Immutable, fluent, strictly appendable builder for URI templates. */
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 public abstract class UriTemplate {
     private static final Pattern URI_PATTERN = Pattern
-            .compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]*):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
+            .compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
 
     public static UriTemplate fromString(String uri) {
         Matcher matcher = URI_PATTERN.matcher(uri);
@@ -69,6 +69,11 @@ public abstract class UriTemplate {
         public String get() {
             return scheme;
         }
+
+        @Override
+        public UriScheme with(String name, Object value) {
+            return new UriScheme(scheme.replaceVariable(name, value));
+        }
     }
 
     public enum CommonScheme {
@@ -80,7 +85,7 @@ public abstract class UriTemplate {
             return UriScheme.scheme(name());
         }
 
-        public UriAuthorityTemplate authority(String authority) {
+        public UriAuthority authority(String authority) {
             return scheme().authority(authority);
         }
 
@@ -88,11 +93,11 @@ public abstract class UriTemplate {
             return scheme().authorityAndMore(authority);
         }
 
-        public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
+        public HostBasedAuthorityBuilder userInfo(String userInfo) {
             return scheme().userInfo(userInfo);
         }
 
-        public HostBasedAuthorityTemplateBuilder host(String host) {
+        public HostBasedAuthorityBuilder host(String host) {
             return scheme().host(host);
         }
 
@@ -114,19 +119,19 @@ public abstract class UriTemplate {
             super(previous);
         }
 
-        public UriAuthorityTemplate authority(String authority) {
-            return UriAuthorityTemplate.authority(this, authority);
+        public UriAuthority authority(String authority) {
+            return UriAuthority.authority(this, authority);
         }
 
         public NonFragment authorityAndMore(String authorityAndMore) {
-            return UriAuthorityTemplate.authorityAndMore(this, authorityAndMore);
+            return UriAuthority.authorityAndMore(this, authorityAndMore);
         }
 
-        public HostBasedAuthorityTemplateBuilder userInfo(String userInfo) {
-            return HostBasedAuthorityTemplate.builder().scheme(this).userInfo(userInfo);
+        public HostBasedAuthorityBuilder userInfo(String userInfo) {
+            return HostBasedAuthority.builder().scheme(this).userInfo(userInfo);
         }
 
-        public HostBasedAuthorityTemplateBuilder host(String host) {
+        public HostBasedAuthorityBuilder host(String host) {
             return userInfo(null).host(host);
         }
     }
@@ -215,6 +220,11 @@ public abstract class UriTemplate {
         public String get() {
             return path;
         }
+
+        @Override
+        public RelativePath with(String name, Object value) {
+            return new RelativePath((NonPath) previous.with(name, value), path.replaceVariable(name, value));
+        }
     }
 
     public static class AbsolutePath extends UriPath {
@@ -234,6 +244,11 @@ public abstract class UriTemplate {
         public String get() {
             return "/" + path;
         }
+
+        @Override
+        public AbsolutePath with(String name, Object value) {
+            return new AbsolutePath((NonPath) previous.with(name, value), path.replaceVariable(name, value));
+        }
     }
 
     public static class PathElement extends UriPath {
@@ -252,6 +267,11 @@ public abstract class UriTemplate {
         @Override
         public String get() {
             return previous.get() + "/" + path;
+        }
+
+        @Override
+        public PathElement with(String name, Object value) {
+            return new PathElement((UriPath) previous.with(name, value), path.replaceVariable(name, value));
         }
     }
 
@@ -273,6 +293,13 @@ public abstract class UriTemplate {
         @Override
         public String get() {
             return previous + ";" + key + "=" + value;
+        }
+
+        @Override
+        public MatrixPath with(String name, Object value) {
+            return new MatrixPath((UriPath) previous.with(name, value), //
+                    this.key.replaceVariable(name, value), //
+                    this.value.replaceVariable(name, value));
         }
     }
 
@@ -348,6 +375,13 @@ public abstract class UriTemplate {
         public String get() {
             return (first() ? "" : previous.get() + "&") + key + "=" + value;
         }
+
+        @Override
+        public Query with(String name, Object value) {
+            return new Query(previous.with(name, value), //
+                    this.key.replaceVariable(name, value), //
+                    this.value.replaceVariable(name, value));
+        }
     }
 
     public static abstract class NonFragment extends UriTemplate {
@@ -383,6 +417,11 @@ public abstract class UriTemplate {
         @Override
         public String schemeSpecificPart() {
             return previous.schemeSpecificPart();
+        }
+
+        @Override
+        public Fragment with(String name, Object value) {
+            return new Fragment(previous.with(name, value), fragment.replaceVariable(name, value));
         }
     }
 
@@ -434,28 +473,22 @@ public abstract class UriTemplate {
     }
 
     public String authority() {
-        return findPartString(UriAuthorityTemplate.class);
+        return findPartString(UriAuthority.class);
     }
 
     public String userInfo() {
-        UriAuthorityTemplate authority = findPart(UriAuthorityTemplate.class);
-        if (authority instanceof HostBasedAuthorityTemplate)
-            return authority.userInfo();
-        return null;
+        HostBasedAuthority authority = findPart(HostBasedAuthority.class);
+        return (authority == null) ? null : authority.userInfo();
     }
 
     public String host() {
-        UriAuthorityTemplate authority = findPart(UriAuthorityTemplate.class);
-        if (authority instanceof HostBasedAuthorityTemplate)
-            return authority.host();
-        return null;
+        HostBasedAuthority authority = findPart(HostBasedAuthority.class);
+        return (authority == null) ? null : authority.host();
     }
 
     public String port() {
-        UriAuthorityTemplate authority = findPart(UriAuthorityTemplate.class);
-        if (authority instanceof HostBasedAuthorityTemplate)
-            return authority.port();
-        return null;
+        HostBasedAuthority authority = findPart(HostBasedAuthority.class);
+        return (authority == null) ? null : authority.port();
     }
 
     public String path() {
@@ -469,6 +502,8 @@ public abstract class UriTemplate {
     public String fragment() {
         return findPartString(Fragment.class);
     }
+
+    public abstract UriTemplate with(String name, Object value);
 
     /** the string version of this part; for the complete uri, call {@link #toString()} or {@link #toUri()}. */
     public abstract String get();

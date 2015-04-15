@@ -3,12 +3,13 @@ package com.github.t1.rest;
 import java.util.regex.*;
 
 import lombok.*;
-import lombok.experimental.Builder;
+import lombok.experimental.*;
 
 import com.github.t1.rest.UriTemplate.NonPath;
 
-public abstract class UriAuthorityTemplate extends NonPath {
-    private UriAuthorityTemplate(NonAuthority previous) {
+@ExtensionMethod(MethodExtensions.class)
+public abstract class UriAuthority extends NonPath {
+    private UriAuthority(NonAuthority previous) {
         super(previous);
     }
 
@@ -16,26 +17,37 @@ public abstract class UriAuthorityTemplate extends NonPath {
     // we don't support ip addresses and other, probably esoteric cases
     private static final Pattern HOST_BASED_PATTERN = Pattern.compile("" //
             + "((?<userinfo>.*)@)?" //
-            + "(?<host>([\\p{Alnum}.-]*?))" //
+            + "(?<host>([\\p{Alnum}.{}-]*?))" //
             + "(:(?<port>[^/]*))?" //
             + "(?<more>[/?].*)?");
 
-    public static UriAuthorityTemplate authority(NonAuthority scheme, String authority) {
+    private static final Pattern REGISTRY_BASED_PATTERN = Pattern.compile("" //
+            + "(?<name>(.*?))" //
+            + "(?<more>[/?].*)?");
+
+    public static UriAuthority authority(NonAuthority scheme, String authority) {
         Matcher matcher = HOST_BASED_PATTERN.matcher(authority);
         if (!matcher.matches())
-            return new RegistryBasedAuthorityTemplate(scheme, authority);
-        return builder(scheme, matcher);
+            return new RegistryBasedAuthority(scheme, authority);
+        return hostBasedAuthority(scheme, matcher);
     }
 
     public static NonFragment authorityAndMore(NonAuthority scheme, String authorityAndMore) {
+        UriAuthority authority;
         Matcher matcher = HOST_BASED_PATTERN.matcher(authorityAndMore);
-        if (!matcher.matches())
-            return new RegistryBasedAuthorityTemplate(scheme, authorityAndMore);
-        return builder(scheme, matcher).pathAndMore(matcher.group("more"));
+        if (!matcher.matches()) {
+            matcher = REGISTRY_BASED_PATTERN.matcher(authorityAndMore);
+            if (!matcher.matches())
+                throw new IllegalArgumentException("unparseable authority; this should not be possible");
+            authority = new RegistryBasedAuthority(scheme, matcher.group("name"));
+        } else {
+            authority = hostBasedAuthority(scheme, matcher);
+        }
+        return authority.pathAndMore(matcher.group("more"));
     }
 
-    private static HostBasedAuthorityTemplate builder(NonAuthority scheme, Matcher matcher) {
-        return HostBasedAuthorityTemplate.builder() //
+    private static HostBasedAuthority hostBasedAuthority(NonAuthority scheme, Matcher matcher) {
+        return HostBasedAuthority.builder() //
                 .scheme(scheme) //
                 .userInfo(matcher.group("userinfo")) //
                 .host(matcher.group("host")) //
@@ -43,10 +55,10 @@ public abstract class UriAuthorityTemplate extends NonPath {
                 .build();
     }
 
-    public static class RegistryBasedAuthorityTemplate extends UriAuthorityTemplate {
+    public static class RegistryBasedAuthority extends UriAuthority {
         private final String registryName;
 
-        public RegistryBasedAuthorityTemplate(NonAuthority scheme, String registryName) {
+        public RegistryBasedAuthority(NonAuthority scheme, String registryName) {
             super(scheme);
             this.registryName = registryName;
         }
@@ -60,12 +72,18 @@ public abstract class UriAuthorityTemplate extends NonPath {
         public String get() {
             return registryName;
         }
+
+        @Override
+        public RegistryBasedAuthority with(String name, Object value) {
+            return new RegistryBasedAuthority((NonAuthority) previous.with(name, value), //
+                    this.registryName.replaceVariable(name, value));
+        }
     }
 
     @Getter
     @Builder
-    public static class HostBasedAuthorityTemplate extends UriAuthorityTemplate {
-        public static class HostBasedAuthorityTemplateBuilder {
+    public static class HostBasedAuthority extends UriAuthority {
+        public static class HostBasedAuthorityBuilder {
             @Setter
             NonAuthority scheme;
 
@@ -85,8 +103,8 @@ public abstract class UriAuthorityTemplate extends NonPath {
                 return build().path(string);
             }
 
-            public HostBasedAuthorityTemplate build() {
-                return new HostBasedAuthorityTemplate(scheme, userInfo, host, port);
+            public HostBasedAuthority build() {
+                return new HostBasedAuthority(scheme, userInfo, host, port);
             }
 
             @Override
@@ -99,7 +117,7 @@ public abstract class UriAuthorityTemplate extends NonPath {
         String host;
         String port;
 
-        public HostBasedAuthorityTemplate(NonAuthority scheme, String userInfo, String host, String port) {
+        public HostBasedAuthority(NonAuthority scheme, String userInfo, String host, String port) {
             super(scheme);
             this.userInfo = userInfo;
             this.host = host;
@@ -116,6 +134,14 @@ public abstract class UriAuthorityTemplate extends NonPath {
             return ((userInfo == null) ? "" : userInfo + "@") //
                     + host //
                     + ((port == null) ? "" : ":" + port);
+        }
+
+        @Override
+        public HostBasedAuthority with(String name, Object value) {
+            return new HostBasedAuthority((NonAuthority) previous.with(name, value), //
+                    this.userInfo.replaceVariable(name, value), //
+                    this.host.replaceVariable(name, value), //
+                    this.port.replaceVariable(name, value));
         }
     }
 }

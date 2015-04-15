@@ -43,11 +43,11 @@ public class RestRequest {
     /**
      * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
      * passed to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
-     * type, but it's not complete or otherwise not useful for this request.
+     * content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType mediaType) {
-        return new TypedRestRequest<>(resource, headers, acceptedType, mediaType);
+    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+        return new TypedRestRequest<>(resource, headers, acceptedType, contentType);
     }
 
     protected void addHeaders(HttpMessage request) {

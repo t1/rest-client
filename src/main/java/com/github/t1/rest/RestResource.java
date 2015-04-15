@@ -61,12 +61,12 @@ public class RestResource {
 
     /**
      * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
-     * passed to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
-     * type, but it's not complete or otherwise not useful for this request.
+     * pass to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
+     * content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType mediaType) {
-        return request().accept(acceptedType, mediaType);
+    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+        return request().accept(acceptedType, contentType);
     }
 
     public RestRequest header(String name, Object value) {
@@ -80,6 +80,10 @@ public class RestResource {
     public InputStream getStream() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    public RestResource with(String name, Object value) {
+        return new RestResource(uri.with(name, value));
     }
 
     @Override

@@ -27,12 +27,12 @@ public class TypedRestRequest<T> extends RestRequest {
 
     /**
      * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type passed
-     * in. This method is only needed if you (must) know that the server would return some type, but it's not complete
-     * or otherwise not useful for this request.
+     * in. This method is only needed if you (must) know that the server would return some content type, that is not
+     * complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public TypedRestRequest(RestResource resource, Headers headers, Class<T> acceptedType, MediaType mediaType) {
-        this(resource, headers, CONFIG.converterFor(acceptedType, mediaType));
+    public TypedRestRequest(RestResource resource, Headers headers, Class<T> acceptedType, MediaType conentType) {
+        this(resource, headers, CONFIG.converterFor(acceptedType, conentType));
     }
 
     public TypedRestRequest(RestResource resource, Headers headers, RestConverter<T> converter) {

@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import com.github.t1.rest.UriAuthorityTemplate.HostBasedAuthorityTemplate.HostBasedAuthorityTemplateBuilder;
+import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
 import com.github.t1.rest.UriTemplate.Query;
 import com.github.t1.rest.UriTemplate.UriPath;
 
@@ -78,7 +78,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildHttps() {
-        HostBasedAuthorityTemplateBuilder uri = https.host("example.org");
+        HostBasedAuthorityBuilder uri = https.host("example.org");
 
         assertEquals("https://example.org", uri.toString());
     }

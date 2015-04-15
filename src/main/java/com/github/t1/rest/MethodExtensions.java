@@ -3,6 +3,7 @@ package com.github.t1.rest;
 import static java.util.Collections.*;
 
 import java.util.*;
+import java.util.regex.*;
 
 public class MethodExtensions {
     public static <T> T head(List<T> list) {
@@ -24,5 +25,19 @@ public class MethodExtensions {
         List<T> out = new ArrayList<>(in);
         out.add(element);
         return out;
+    }
+
+    public static List<String> variables(String string) {
+        List<String> out = new ArrayList<>();
+        Matcher matcher = Pattern.compile("\\{(?<name>.*?)\\}").matcher(string);
+        while (matcher.find())
+            out.add(matcher.group("name"));
+        return out;
+    }
+
+    public static String replaceVariable(String string, String name, Object value) {
+        if (string == null)
+            return string;
+        return string.replace("{" + name + "}", value.toString());
     }
 }
