@@ -1,7 +1,7 @@
 package com.github.t1.rest;
 
 import static ch.qos.logback.classic.Level.*;
-import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
+import static com.github.t1.rest.YamlMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
@@ -14,18 +14,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.*;
 
-import org.jglue.cdiunit.*;
+import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.*;
 
-import com.github.t1.rest.fallback.*;
-
 @RunWith(CdiRunner.class)
-@ActivatedAlternatives({ JsonMessageBodyReader.class, XmlMessageBodyReader.class, YamlMessageBodyReader.class,
-        StringMessageBodyReader.class })
 public class RestTest {
     @Data
     @AllArgsConstructor
@@ -114,6 +110,8 @@ public class RestTest {
 
     @Before
     public void before() {
+        TypedRestRequest.CONFIG.add(new YamlMessageBodyReader());
+
         setLogLevel("org.apache.http.wire", DEBUG);
         setLogLevel("com.github.t1.rest", DEBUG);
     }

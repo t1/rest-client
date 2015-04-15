@@ -17,7 +17,7 @@ import org.apache.http.client.methods.*;
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class TypedRestRequest<T> extends RestRequest {
-    private static final RestConfig CONFIG = new RestConfig();
+    public static final RestConfig CONFIG = new RestConfig();
 
     private final RestConverter<T> converter;
 

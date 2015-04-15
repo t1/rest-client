@@ -1,6 +1,6 @@
-package com.github.t1.rest.fallback;
+package com.github.t1.rest;
 
-import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
+import static com.github.t1.rest.YamlMessageBodyReader.*;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;

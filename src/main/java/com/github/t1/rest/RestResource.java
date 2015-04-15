@@ -2,7 +2,6 @@ package com.github.t1.rest;
 
 import static java.util.Arrays.*;
 
-import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
 
@@ -75,11 +74,6 @@ public class RestResource {
 
     public <T> T get(Class<T> acceptedType) {
         return accept(acceptedType).get();
-    }
-
-    public InputStream getStream() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
     public RestResource with(String name, Object value) {

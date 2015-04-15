@@ -5,16 +5,27 @@ import java.util.*;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import lombok.extern.slf4j.Slf4j;
-
 import com.github.t1.rest.fallback.*;
 
 /**
  * TODO it would be nice if we could reuse the MessageBodyReaders from the container, when available, but they don't
  * seem to be CDI beans, so how should we detect them?
  */
-@Slf4j
 public class RestConfig {
+    private final List<MessageBodyReader<?>> readers = new ArrayList<>();
+
+    public RestConfig() {
+        add(new InputStreamMessageBodyReader());
+        add(new JsonMessageBodyReader());
+        add(new StringMessageBodyReader());
+        add(new XmlMessageBodyReader());
+    }
+
+    public RestConfig add(MessageBodyReader<?> reader) {
+        readers.add(reader);
+        return this;
+    }
+
     public <T> RestConverter<T> converterFor(Class<T> type) {
         return converterFor(type, null);
     }
@@ -36,18 +47,7 @@ public class RestConfig {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <T> Iterable<MessageBodyReader<T>> readers() {
-        List<MessageBodyReader<?>> out = new ArrayList<>();
-        out.add(new StringMessageBodyReader());
-        out.add(new JsonMessageBodyReader());
-        out.add(new XmlMessageBodyReader());
-        try {
-            out.add(new YamlMessageBodyReader());
-        } catch (NoClassDefFoundError e) {
-            if (!"com/fasterxml/jackson/dataformat/yaml/snakeyaml/Yaml".equals(e.getMessage()))
-                throw e;
-            log.debug("Yaml not found; ignore");
-        }
-        return (List) out;
+    public <T> Iterable<MessageBodyReader<T>> readers() {
+        return (List) readers;
     }
 }
