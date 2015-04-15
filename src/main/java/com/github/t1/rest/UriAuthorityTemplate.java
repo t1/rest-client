@@ -18,7 +18,7 @@ public abstract class UriAuthorityTemplate extends NonPath {
             + "((?<userinfo>.*)@)?" //
             + "(?<host>([\\p{Alnum}.-]*?))" //
             + "(:(?<port>[^/]*))?" //
-            + "(?<more>/.*)?");
+            + "(?<more>[/?].*)?");
 
     public static UriAuthorityTemplate authority(NonAuthority scheme, String authority) {
         Matcher matcher = HOST_BASED_PATTERN.matcher(authority);

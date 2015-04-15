@@ -137,10 +137,16 @@ public abstract class UriTemplate {
         }
 
         public NonFragment pathAndMore(String path) {
-            return path(path); // TODO more: query
+            if (path == null)
+                return this;
+            String[] split = path.split("\\?", 2);
+            NonQuery nonQuery = path(split[0]);
+            if (split.length == 2)
+                return nonQuery.queryAndMore(split[1]);
+            return nonQuery;
         }
 
-        public NonFragment path(String path) {
+        public NonQuery path(String path) {
             if (path == null)
                 return this;
             boolean isAbsolute = path.startsWith("/");
@@ -275,6 +281,17 @@ public abstract class UriTemplate {
             super(previous);
         }
 
+        public NonFragment queryAndMore(String string) {
+            if (string.isEmpty())
+                return this;
+            List<String> split = asList(string.split("&"));
+            return query(split.head()).query(split.tail());
+        }
+
+        public Query query(String keyValue) {
+            return new Query(this, keyValue);
+        }
+
         @Override
         public Query query(String key, String value) {
             return new Query(this, key, value);
@@ -282,6 +299,18 @@ public abstract class UriTemplate {
     }
 
     public static class Query extends NonFragment {
+        private Query(UriTemplate before, String keyValue) {
+            this(before, key(keyValue), value(keyValue));
+        }
+
+        private static String key(String keyValue) {
+            return keyValue.split("=")[0];
+        }
+
+        private static String value(String keyValue) {
+            return keyValue.split("=")[1];
+        }
+
         private Query(UriTemplate before, String key, String value) {
             super(before);
             this.key = key;
@@ -290,6 +319,16 @@ public abstract class UriTemplate {
 
         private final String key;
         private final String value;
+
+        public NonFragment query(List<String> list) {
+            if (list.isEmpty())
+                return this;
+            return query(list.head()).query(list.tail());
+        }
+
+        public Query query(String keyValue) {
+            return new Query(this, keyValue);
+        }
 
         @Override
         public Query query(String key, String value) {

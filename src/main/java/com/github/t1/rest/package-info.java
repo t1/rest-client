@@ -15,9 +15,9 @@
  * These parts have to be specified in this order. Only the last two are dynamic, i.e. it's a good practice to put
  * everything up to the chain of links to follow into constants.
  * <p/>
- * To build a REST call, you start with a {@link RestRequest} and add part after part. There are shortcuts, in case you
- * don't need a part, i.e. you can skip adding headers and a body by calling <code>get</code> directly on the uri
- * template.
+ * To build a REST call, you start with a {@link com.github.t1.rest.RestRequest RestRequest} and add part after part.
+ * There are shortcuts, in case you don't need a part, i.e. you can skip adding headers and a body by calling
+ * <code>get</code> directly on the uri template.
  */
 package com.github.t1.rest;
 

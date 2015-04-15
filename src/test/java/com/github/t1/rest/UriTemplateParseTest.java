@@ -187,4 +187,19 @@ public class UriTemplateParseTest {
     public void shouldParseHttpsUri() {
         convert("https://example.com");
     }
+
+    @Test
+    public void shouldParseUriWithPathAndQuery() {
+        convert("http://example.com/path?q=1");
+    }
+
+    @Test
+    public void shouldParseUriWithOathAndTwoQueries() {
+        convert("http://example.com/path?q=1&r=2");
+    }
+
+    @Test
+    public void shouldParseUriWithQuery() {
+        convert("http://example.com?q=1");
+    }
 }
