@@ -1,5 +1,7 @@
 package com.github.t1.rest.fallback;
 
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.*;
+import static com.fasterxml.jackson.databind.DeserializationFeature.*;
 import static javax.ws.rs.core.MediaType.*;
 
 import java.io.*;
@@ -16,7 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Alternative
 @Consumes(APPLICATION_JSON)
 public class JsonMessageBodyReader implements MessageBodyReader<Object> {
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper() //
+            .setSerializationInclusion(NON_EMPTY).configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

@@ -1,16 +1,23 @@
 package com.github.t1.rest;
 
+import static java.util.Collections.*;
+import static lombok.AccessLevel.*;
+
 import java.util.*;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 
-import lombok.Value;
+import lombok.*;
+
+import com.github.t1.rest.Headers.Header;
 
 @Value
-public class Headers {
+@Getter(NONE)
+public class Headers implements Iterable<Header> {
     @Value
     public static class Header {
-        String name, value;
+        String name;
+        String value;
 
         @Override
         public String toString() {
@@ -18,14 +25,26 @@ public class Headers {
         }
     }
 
-    private final List<Header> headers;
+    private final Header head;
+    private final Headers tail;
 
     public Headers() {
-        this(Collections.<Header> emptyList());
+        this(null, null);
     }
 
-    public Headers(List<Header> headers) {
-        this.headers = headers;
+    private Headers(Header head, Headers tail) {
+        this.head = head;
+        this.tail = tail;
+        if (head != null)
+            checkForDuplicates(head.name());
+    }
+
+    private void checkForDuplicates(String name) {
+        if (tail == null || tail.head == null)
+            return;
+        if (tail.head.name().equals(name))
+            throw new IllegalStateException(name + " header already set");
+        tail.checkForDuplicates(name);
     }
 
     public Headers accept(List<MediaType> mediaTypes) {
@@ -39,26 +58,42 @@ public class Headers {
     }
 
     public Headers with(String name, Object value) {
-        return new Headers(with(headers, new Header(name, value.toString())));
+        return new Headers(new Header(name, value.toString()), this);
     }
 
-    private static List<Header> with(List<Header> base, Header header) {
-        if (base.isEmpty())
-            return Collections.singletonList(header);
-        checkUnset(base, header.name());
-        List<Header> out = new ArrayList<>(base);
-        out.add(header);
-        return Collections.unmodifiableList(out);
+    public String get(String name) {
+        if (head.name().equals(name))
+            return head.value();
+        return tail.get(name);
     }
 
-    private static void checkUnset(List<Header> base, String name) {
-        for (Header header : base)
-            if (header.name().equals(name))
-                throw new IllegalStateException(name + " header already set");
+    public int size() {
+        if (head == null)
+            return 0;
+        return 1 + ((tail == null) ? 0 : tail.size());
+    }
+
+    @Override
+    public Iterator<Header> iterator() {
+        Deque<Header> result = new LinkedList<>();
+        for (Headers headers = this; headers != null; headers = headers.tail)
+            if (headers.head != null)
+                result.push(headers.head);
+        return unmodifiableCollection(result).iterator();
+    }
+
+    MultivaluedMap<String, String> toMultiValuedMap() {
+        return new HeadersMultivaluedMap(this);
     }
 
     @Override
     public String toString() {
-        return headers.toString();
+        StringBuilder out = new StringBuilder();
+        for (Header header : this) {
+            if (out.length() > 0)
+                out.append(", ");
+            out.append(header.name());
+        }
+        return out.toString();
     }
 }

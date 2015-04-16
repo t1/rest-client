@@ -5,7 +5,7 @@ import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
-import lombok.Getter;
+import lombok.*;
 
 import org.apache.http.HttpMessage;
 import org.apache.http.client.methods.*;
@@ -20,7 +20,9 @@ import com.github.t1.rest.Headers.Header;
 public class RestRequest {
     private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
 
+    @NonNull
     RestResource resource;
+    @NonNull
     Headers headers;
 
     public RestRequest(RestResource resource) {
@@ -51,7 +53,7 @@ public class RestRequest {
     }
 
     protected void addHeaders(HttpMessage request) {
-        for (Header header : headers.headers()) {
+        for (Header header : headers) {
             request.addHeader(header.name(), header.value());
         }
     }

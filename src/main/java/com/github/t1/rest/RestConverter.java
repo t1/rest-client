@@ -7,7 +7,7 @@ import java.io.*;
 import java.util.*;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import lombok.Getter;
@@ -68,18 +68,19 @@ public class RestConverter<T> {
         return vendorTypeValue;
     }
 
-    public T convert(InputStream entityStream, MultivaluedMap<String, String> headers) {
+    public T convert(InputStream entityStream, Headers headers) {
         try {
             MediaType mediaType = mediaType(headers);
             MessageBodyReader<T> reader = converterFor(mediaType);
-            return reader.readFrom(acceptedType, acceptedType, null, mediaType, headers, entityStream);
+            return reader.readFrom(acceptedType, acceptedType, null, mediaType, headers.toMultiValuedMap(),
+                    entityStream);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private MediaType mediaType(MultivaluedMap<String, String> headers) {
-        String contentType = headers.getFirst("Content-Type");
+    private MediaType mediaType(Headers headers) {
+        String contentType = headers.get("Content-Type");
         if (contentType == null)
             return null;
         if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?

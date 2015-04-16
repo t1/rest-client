@@ -46,7 +46,7 @@ public class TypedRestRequest<T> extends RestRequest {
         log.debug("execute {} on {}", get, get.getURI());
         try (CloseableHttpResponse response = execute(get)) {
             expecting(response, OK);
-            MultivaluedMap<String, String> headers = convert(response.getAllHeaders());
+            Headers headers = convert(response.getAllHeaders());
             return converter.convert(response.getEntity().getContent(), headers);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -64,10 +64,10 @@ public class TypedRestRequest<T> extends RestRequest {
         return response.getStatusLine().getStatusCode() == expected.getStatusCode();
     }
 
-    private MultivaluedMap<String, String> convert(Header[] headers) {
-        MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
+    private Headers convert(Header[] headers) {
+        Headers out = new Headers();
         for (Header header : headers)
-            map.add(header.getName(), header.getValue());
-        return map;
+            out = out.with(header.getName(), header.getValue());
+        return out;
     }
 }
