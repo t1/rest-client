@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import static lombok.AccessLevel.*;
 
@@ -16,12 +17,26 @@ import com.github.t1.rest.Headers.Header;
 public class Headers implements Iterable<Header> {
     @Value
     public static class Header {
-        String name;
-        String value;
+        String name, value;
+
+        public Header(String name, String value) {
+            this.name = checkNonEmpty("name", name);
+            this.value = checkNonEmpty(name + " header", value);
+        }
+
+        private String checkNonEmpty(String name, String string) {
+            if (string == null || string.isEmpty())
+                throw new IllegalArgumentException(name + " must not be empty");
+            return string;
+        }
 
         @Override
         public String toString() {
             return name + ": " + value;
+        }
+
+        public boolean isNamed(String name) {
+            return this.name.equalsIgnoreCase(name);
         }
     }
 
@@ -42,9 +57,17 @@ public class Headers implements Iterable<Header> {
     private void checkForDuplicates(String name) {
         if (tail == null || tail.head == null)
             return;
-        if (tail.head.name().equals(name))
+        if (tail.head.isNamed(name))
             throw new IllegalStateException(name + " header already set");
         tail.checkForDuplicates(name);
+    }
+
+    public Headers contentType(MediaType mediaType) {
+        return with("Content-Type", mediaType);
+    }
+
+    public Headers accept(MediaType... mediaTypes) {
+        return accept(asList(mediaTypes));
     }
 
     public Headers accept(List<MediaType> mediaTypes) {
@@ -62,7 +85,9 @@ public class Headers implements Iterable<Header> {
     }
 
     public String get(String name) {
-        if (head.name().equals(name))
+        if (head == null)
+            return null;
+        if (head.isNamed(name))
             return head.value();
         return tail.get(name);
     }
