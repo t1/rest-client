@@ -216,4 +216,61 @@ public class HeadersMultivaluedMapTest {
 
         assertEquals(orig, headers.toString());
     }
+
+    @Test
+    public void shouldBeEqualWhenIgnoringOrder() {
+        Headers headers = new Headers().accept(TEXT_PLAIN_TYPE);
+        MultivaluedMap<String, String> map1 = headers.toMultiValuedMap();
+        MultivaluedMap<String, String> map2 = headers.toMultiValuedMap();
+
+        map1.add("Accept", TEXT_HTML);
+        map2.addFirst("Accept", TEXT_HTML);
+
+        assertNotEquals(map1, map2);
+        assertTrue(map1.equalsIgnoreValueOrder(map2));
+    }
+
+    @Test
+    public void shouldBeDifferentSizeEvenWhenIgnoringOrder() {
+        Headers headers = new Headers().accept(TEXT_PLAIN_TYPE);
+        MultivaluedMap<String, String> map1 = headers.toMultiValuedMap();
+        MultivaluedMap<String, String> map2 = headers.toMultiValuedMap();
+
+        map1.add("Accept", TEXT_HTML);
+
+        assertNotEquals(map1, map2);
+        assertFalse(map1.equalsIgnoreValueOrder(map2));
+    }
+
+    @Test
+    public void shouldBeDifferentKeyWhenIgnoringOrder() {
+        Headers headers = new Headers();
+        MultivaluedMap<String, String> map1 = headers.toMultiValuedMap();
+        MultivaluedMap<String, String> map2 = headers.toMultiValuedMap();
+
+        map1.add("Accept", TEXT_HTML);
+        map2.add("Content-Type", TEXT_HTML);
+
+        assertNotEquals(map1, map2);
+        assertFalse(map1.equalsIgnoreValueOrder(map2));
+    }
+
+    @Test
+    public void shouldBeDifferentValueWhenIgnoringOrder() {
+        Headers headers = new Headers().accept(TEXT_PLAIN_TYPE);
+        MultivaluedMap<String, String> map1 = headers.toMultiValuedMap();
+        MultivaluedMap<String, String> map2 = headers.toMultiValuedMap();
+
+        map1.add("Content-Type", TEXT_HTML);
+
+        assertNotEquals(map1, map2);
+        assertFalse(map1.equalsIgnoreValueOrder(map2));
+    }
+
+    @Test
+    public void shouldNotBeEqualToADifferentType() {
+        MultivaluedMap<String, String> map = new Headers().accept(TEXT_PLAIN_TYPE).toMultiValuedMap();
+
+        assertNotEquals(map, "");
+    }
 }

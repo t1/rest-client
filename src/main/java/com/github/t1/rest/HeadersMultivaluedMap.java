@@ -127,7 +127,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
                 @Override
                 public List<String> setValue(List<String> value) {
-                    throw new UnsupportedOperationException();
+                    throw new UnsupportedOperationException(); // TODO set value
                 }
 
                 @Override
@@ -205,16 +205,20 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     public boolean equalsIgnoreValueOrder(MultivaluedMap<String, String> otherMap) {
         if (otherMap.size() != headers.size())
             return false;
-        for (Map.Entry<String, List<String>> entry : otherMap.entrySet()) {
-            if (entry.getValue().size() != 1)
+        for (Header header : headers) {
+            List<String> otherValues = otherMap.get(header.name());
+            if (otherValues == null)
                 return false;
-            String actual = headers.get(entry.getKey()); // TODO multi-values
-            if (actual == null)
+            Set<String> thisValues = asSet(toMultiValue(header.value()));
+            if (!thisValues.equals(asSet(otherValues))) {
                 return false;
-            if (!actual.equals(entry.getValue().get(0)))
-                return false;
+            }
         }
         return true;
+    }
+
+    private HashSet<String> asSet(List<String> list) {
+        return new HashSet<>(list);
     }
 
     @Override

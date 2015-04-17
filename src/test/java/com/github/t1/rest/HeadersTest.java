@@ -40,6 +40,7 @@ public class HeadersTest {
         assertEquals(0, headers.size());
         assertFalse(headers.iterator().hasNext());
         assertEquals("", headers.toString());
+        assertFalse(headers.contains("Key"));
     }
 
     @Test
@@ -55,6 +56,7 @@ public class HeadersTest {
         assertEquals("Key: true", headers.toString());
         assertEquals("true", headers.get("Key"));
         assertEquals("true", headers.get("key"));
+        assertTrue(headers.contains("Key"));
     }
 
     @Test
