@@ -23,7 +23,7 @@ public class JsonMessageBodyReader implements MessageBodyReader<Object> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type != String.class;
+        return ConverterTools.isConvertible(type);
     }
 
     @Override

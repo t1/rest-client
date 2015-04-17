@@ -1,6 +1,5 @@
 package com.github.t1.rest.fallback;
 
-import static com.github.t1.rest.fallback.StringMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 
 import java.io.*;
@@ -19,12 +18,12 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class XmlMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type != String.class && type.isAnnotationPresent(XmlRootElement.class);
+        return ConverterTools.isConvertible(type) && type.isAnnotationPresent(XmlRootElement.class);
     }
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
-        return JAXB.unmarshal(new StringReader(readString(entityStream, mediaType)), type);
+        return JAXB.unmarshal(new StringReader(ConverterTools.readString(entityStream, mediaType)), type);
     }
 }

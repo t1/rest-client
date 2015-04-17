@@ -35,6 +35,8 @@ public class RestConverter<T> {
             MediaType mediaType = vendored(rawMediaType);
             if (isReadable(mediaType, reader, limitedType)) {
                 log.debug("{} can convert {} to {}", reader.getClass(), mediaType, acceptedType);
+                if (limitedType != null && readers.isEmpty())
+                    mediaType = limitedType; // prefer actual limited type over the produced
                 readers.put(mediaType, reader);
             }
         }
@@ -110,5 +112,10 @@ public class RestConverter<T> {
     public String toString() {
         return "Converter for " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) + " using "
                 + readers.values();
+    }
+
+    /** iff the type to convert to is {@link Closeable}, the client has to do so in order to close the stream */
+    public boolean shouldClose() {
+        return !Closeable.class.isAssignableFrom(acceptedType);
     }
 }

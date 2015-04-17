@@ -1,21 +1,24 @@
 package com.github.t1.rest;
 
+import static javax.ws.rs.core.Response.Status.*;
+
 import java.io.IOException;
 import java.net.URI;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.Status;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
-import org.apache.http.HttpMessage;
+import org.apache.http.*;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
-
-import com.github.t1.rest.Headers.Header;
 
 /**
  * A {@link RestResource} plus headers to be sent. May be typed (see {@link TypedRestRequest}).
  */
+@Slf4j
 @Getter
 public class RestRequest {
     private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
@@ -43,9 +46,9 @@ public class RestRequest {
     }
 
     /**
-     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
-     * passed to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
-     * content type, that is not complete or otherwise not useful for this request, so you need a different one.
+     * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
+     * type you passed to {@link #accept(Class)}. Call this method only, if you (must) know that the server would return
+     * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
     public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
@@ -53,13 +56,35 @@ public class RestRequest {
     }
 
     protected void addHeaders(HttpMessage request) {
-        for (Header header : headers) {
+        for (Headers.Header header : headers) {
             request.addHeader(header.name(), header.value());
         }
     }
 
     protected CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
-        return CLIENT.execute(request);
+        log.debug("execute {} on {}", request, request.getURI());
+        addHeaders(request);
+        CloseableHttpResponse response = CLIENT.execute(request);
+        expecting(response, OK);
+        return response;
+    }
+
+    private void expecting(CloseableHttpResponse response, Status expectedStatus) {
+        if (!isStatus(response, expectedStatus))
+            throw new RuntimeException("expected status " + expectedStatus.getStatusCode() + " "
+                    + expectedStatus.getReasonPhrase() + " but got " + response.getStatusLine().getStatusCode() + " "
+                    + response.getStatusLine().getReasonPhrase());
+    }
+
+    private boolean isStatus(CloseableHttpResponse response, Status expected) {
+        return response.getStatusLine().getStatusCode() == expected.getStatusCode();
+    }
+
+    protected Headers convert(Header[] headers) {
+        Headers out = new Headers();
+        for (Header header : headers)
+            out = out.with(header.getName(), header.getValue());
+        return out;
     }
 
     @Override

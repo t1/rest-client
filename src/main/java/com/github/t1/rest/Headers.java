@@ -99,7 +99,7 @@ public class Headers implements Iterable<Header> {
     public int size() {
         if (head == null)
             return 0;
-        return 1 + ((tail == null) ? 0 : tail.size());
+        return 1 + tail.size();
     }
 
     @Override

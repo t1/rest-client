@@ -31,15 +31,15 @@ public class RestConfig {
     }
 
     /**
-     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type. This
-     * method is only needed if you (must) know that the server would return some content type that is not complete or
-     * otherwise not useful for this request, so you need a different one.
+     * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
+     * type. Call this method only, if you (must) know that the server would return some content type that is not
+     * complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> RestConverter<T> converterFor(Class<T> type, MediaType conentType) {
+    public <T> RestConverter<T> converterFor(Class<T> type, MediaType contentType) {
         RestConverter<T> out = new RestConverter<>(type);
         for (MessageBodyReader<T> bean : this.<T> readers()) {
-            out.addIfReadable(bean, conentType);
+            out.addIfReadable(bean, contentType);
         }
         if (out.mediaTypes().isEmpty())
             throw new IllegalArgumentException("no MessageBodyReader found for " + type);

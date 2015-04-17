@@ -7,6 +7,8 @@ import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 
+import java.io.InputStream;
+
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -20,6 +22,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.*;
+
+import com.github.t1.rest.fallback.ConverterTools;
 
 @RunWith(CdiRunner.class)
 public class RestTest {
@@ -250,5 +254,12 @@ public class RestTest {
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPingAsStream() throws Exception {
+        try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).get()) {
+            assertEquals("pong", ConverterTools.readString(pong, null));
+        }
     }
 }

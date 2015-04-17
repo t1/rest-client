@@ -59,9 +59,9 @@ public class RestResource {
     }
 
     /**
-     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type you
-     * pass to {@link #accept(Class)}. This method is only needed if you (must) know that the server would return some
-     * content type, that is not complete or otherwise not useful for this request, so you need a different one.
+     * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
+     * type you pass to {@link #accept(Class)}. Call this method only, if you (must) know that the server would return
+     * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
     public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {

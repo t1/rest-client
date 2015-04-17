@@ -1,19 +1,13 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-
 import java.io.IOException;
 
-import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.MediaType;
 
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
 
-import org.apache.http.Header;
 import org.apache.http.client.methods.*;
 
-@Slf4j
 @Value
 @EqualsAndHashCode(callSuper = true)
 public class TypedRestRequest<T> extends RestRequest {
@@ -26,13 +20,13 @@ public class TypedRestRequest<T> extends RestRequest {
     }
 
     /**
-     * Normally you wouldn't call this: the acceptable types are determined by the readers available for the type passed
-     * in. This method is only needed if you (must) know that the server would return some content type, that is not
-     * complete or otherwise not useful for this request, so you need a different one.
+     * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
+     * type passed in. Call this method only, if you (must) know that the server would return some content type, that is
+     * not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public TypedRestRequest(RestResource resource, Headers headers, Class<T> acceptedType, MediaType conentType) {
-        this(resource, headers, CONFIG.converterFor(acceptedType, conentType));
+    public TypedRestRequest(RestResource resource, Headers headers, Class<T> acceptedType, MediaType contentType) {
+        this(resource, headers, CONFIG.converterFor(acceptedType, contentType));
     }
 
     public TypedRestRequest(RestResource resource, Headers headers, RestConverter<T> converter) {
@@ -40,34 +34,26 @@ public class TypedRestRequest<T> extends RestRequest {
         this.converter = converter;
     }
 
+    @SuppressWarnings("resource")
     public T get() {
-        HttpGet get = new HttpGet(uri());
-        addHeaders(get);
-        log.debug("execute {} on {}", get, get.getURI());
-        try (CloseableHttpResponse response = execute(get)) {
-            expecting(response, OK);
+        CloseableHttpResponse response = null;
+        boolean shouldClose = true;
+        try {
+            response = execute(new HttpGet(uri()));
             Headers headers = convert(response.getAllHeaders());
-            return converter.convert(response.getEntity().getContent(), headers);
+            T converted = converter.convert(response.getEntity().getContent(), headers);
+            shouldClose = converter.shouldClose();
+            return converted;
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            if (response != null && shouldClose) {
+                try {
+                    response.close();
+                } catch (Throwable e) {
+                    // ignore
+                }
+            }
         }
-    }
-
-    private void expecting(CloseableHttpResponse response, Status expectedStatus) {
-        if (!isStatus(response, expectedStatus))
-            throw new RuntimeException("expected status " + expectedStatus.getStatusCode() + " "
-                    + expectedStatus.getReasonPhrase() + " but got " + response.getStatusLine().getStatusCode() + " "
-                    + response.getStatusLine().getReasonPhrase());
-    }
-
-    private boolean isStatus(CloseableHttpResponse response, Status expected) {
-        return response.getStatusLine().getStatusCode() == expected.getStatusCode();
-    }
-
-    private Headers convert(Header[] headers) {
-        Headers out = new Headers();
-        for (Header header : headers)
-            out = out.with(header.getName(), header.getValue());
-        return out;
     }
 }

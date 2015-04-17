@@ -12,6 +12,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
+import com.github.t1.rest.fallback.ConverterTools;
 
 @Alternative
 @Consumes(APPLICATION_YAML)
@@ -23,7 +24,7 @@ public class YamlMessageBodyReader implements MessageBodyReader<Object> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type != String.class;
+        return ConverterTools.isConvertible(type);
     }
 
     @Override
