@@ -51,7 +51,8 @@ public class HeadersTest {
         assertTrue(i.hasNext());
         assertEquals("Key: true", i.next().toString());
         assertFalse(i.hasNext());
-        assertEquals("Key", headers.toString());
+        assertEquals("Key", headers.getHeaderNames());
+        assertEquals("Key: true", headers.toString());
         assertEquals("true", headers.get("Key"));
         assertEquals("true", headers.get("key"));
     }
@@ -67,7 +68,8 @@ public class HeadersTest {
         assertTrue(i.hasNext());
         assertEquals("Two: 2", i.next().toString());
         assertFalse(i.hasNext());
-        assertEquals("One, Two", headers.toString());
+        assertEquals("One, Two", headers.getHeaderNames());
+        assertEquals("One: true | Two: 2", headers.toString());
 
         assertEquals("true", headers.get("One"));
         assertEquals("true", headers.get("one"));
@@ -88,7 +90,8 @@ public class HeadersTest {
         assertTrue(i.hasNext());
         assertEquals("Three: 3.0", i.next().toString());
         assertFalse(i.hasNext());
-        assertEquals("One, Two, Three", headers.toString());
+        assertEquals("One, Two, Three", headers.getHeaderNames());
+        assertEquals("One: true | Two: 2 | Three: 3.0", headers.toString());
 
         assertEquals("true", headers.get("One"));
         assertEquals("2", headers.get("Two"));
@@ -145,9 +148,25 @@ public class HeadersTest {
         assertTrue(i.hasNext());
         assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", i.next().toString());
         assertFalse(i.hasNext());
-        assertEquals("Accept", headers.toString());
+        assertEquals("Accept", headers.getHeaderNames());
+        assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", headers.toString());
 
         assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.get("Accept"));
+    }
+
+    @Test
+    public void shouldAddContentTypeHeader() {
+        Headers headers = new Headers().contentType(new MediaType("text", "html", "utf-8"));
+
+        assertEquals(1, headers.size());
+        Iterator<Header> i = headers.iterator();
+        assertTrue(i.hasNext());
+        assertEquals("Content-Type: text/html;charset=utf-8", i.next().toString());
+        assertFalse(i.hasNext());
+        assertEquals("Content-Type", headers.getHeaderNames());
+        assertEquals("Content-Type: text/html;charset=utf-8", headers.toString());
+
+        assertEquals("text/html;charset=utf-8", headers.get("Content-Type"));
     }
 
     @Test(expected = IllegalArgumentException.class)

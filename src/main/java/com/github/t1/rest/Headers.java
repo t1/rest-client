@@ -92,6 +92,10 @@ public class Headers implements Iterable<Header> {
         return tail.get(name);
     }
 
+    public boolean contains(String name) {
+        return get(name) != null;
+    }
+
     public int size() {
         if (head == null)
             return 0;
@@ -111,13 +115,23 @@ public class Headers implements Iterable<Header> {
         return new HeadersMultivaluedMap(this);
     }
 
+    public String getHeaderNames() {
+        StringBuilder out = new StringBuilder();
+        for (Header header : this) {
+            if (out.length() > 0)
+                out.append(", ");
+            out.append(header.name);
+        }
+        return out.toString();
+    }
+
     @Override
     public String toString() {
         StringBuilder out = new StringBuilder();
         for (Header header : this) {
             if (out.length() > 0)
-                out.append(", ");
-            out.append(header.name());
+                out.append(" | ");
+            out.append(header);
         }
         return out.toString();
     }

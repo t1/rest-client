@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static java.util.Arrays.*;
 import static java.util.Collections.*;
 
 import java.util.*;
@@ -12,9 +13,15 @@ import org.jboss.weld.exceptions.UnsupportedOperationException;
 
 import com.github.t1.rest.Headers.Header;
 
-/** A view on {@link Headers} */
+/** Based on {@link Headers}; required for some JAX-RS calls; *not* strictly appendable */
 @AllArgsConstructor
 class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
+    private static final String WHITESPACE = "\\s*";
+
+    private static List<String> toMultiValue(String value) {
+        return asList(value.split(WHITESPACE + "," + WHITESPACE));
+    }
+
     private Headers headers;
 
     @Override
@@ -29,33 +36,47 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public boolean containsKey(Object key) {
-        return headers.get((String) key) == null;
+        return headers.contains((String) key);
     }
 
     @Override
     public boolean containsValue(Object value) {
         for (Header header : headers)
-            if (header.value().equals(value))
+            if (toMultiValue(header.value()).equals(value))
                 return true;
         return false;
     }
 
     @Override
     public List<String> get(Object key) {
-        String value = headers.get((String) key); // TODO multi-values
-        return (value == null) ? Collections.<String> emptyList() : singletonList(value);
+        if (!containsKey(key))
+            return null;
+        return toMultiValue(headers.get((String) key));
     }
 
     @Override
     public List<String> put(String key, List<String> values) {
         for (String value : values)
-            putSingle(key, value);
+            add(key, value);
         return null; // there can't be an old value in Headers
     }
 
     @Override
     public List<String> remove(Object key) {
-        throw new UnsupportedOperationException();
+        String name = (String) key;
+        List<String> out = null;
+        if (headers.contains(name)) {
+            Headers newHeaders = new Headers();
+            for (Header header : headers) {
+                if (header.isNamed(name)) {
+                    out = toMultiValue(header.value());
+                } else {
+                    newHeaders = newHeaders.with(header.name(), header.value());
+                }
+            }
+            this.headers = newHeaders;
+        }
+        return out;
     }
 
     @Override
@@ -67,13 +88,12 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void clear() {
-        throw new UnsupportedOperationException();
+        headers = new Headers();
     }
 
     @Override
     public Set<String> keySet() {
-        // #keySet only supports element removal, which we don't
-        // it's still not fully compliant, as changes to the headers are not reflected by this snapshot
+        // TODO reflect changes to the headers in this snapshot
         Set<String> set = new LinkedHashSet<>();
         for (Header header : headers)
             set.add(header.name());
@@ -82,18 +102,16 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public Collection<List<String>> values() {
-        // #values only supports element removal, which we don't
-        // it's still not fully compliant, as changes to the headers are not reflected by this snapshot
+        // TODO reflect changes to the headers in this snapshot
         Set<List<String>> set = new LinkedHashSet<>();
         for (Header header : headers)
-            set.add(singletonList(header.value())); // TODO multi-values
+            set.add(toMultiValue(header.value()));
         return unmodifiableSet(set);
     }
 
     @Override
     public Set<Map.Entry<String, List<String>>> entrySet() {
-        // #entrySet only supports element removal, which we don't
-        // it's still not fully compliant, as changes to the headers are not reflected by this snapshot
+        // TODO reflect changes to the headers in this snapshot
         Set<Map.Entry<String, List<String>>> set = new LinkedHashSet<>();
         for (final Header header : headers) {
             set.add(new Map.Entry<String, List<String>>() {
@@ -104,12 +122,34 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
                 @Override
                 public List<String> getValue() {
-                    return singletonList(header.value()); // TODO multi-values
+                    return toMultiValue(header.value());
                 }
 
                 @Override
                 public List<String> setValue(List<String> value) {
                     throw new UnsupportedOperationException();
+                }
+
+                @Override
+                public boolean equals(Object obj) {
+                    if (this == obj)
+                        return true;
+                    if (!(obj instanceof Map.Entry))
+                        return false;
+                    @SuppressWarnings("unchecked")
+                    Map.Entry<String, List<String>> that = (java.util.Map.Entry<String, List<String>>) obj;
+                    return Objects.equals(this.getKey(), that.getKey())
+                            && Objects.equals(this.getValue(), that.getValue());
+                }
+
+                @Override
+                public int hashCode() {
+                    return Objects.hashCode(getKey()) ^ Objects.hashCode(getValue());
+                }
+
+                @Override
+                public String toString() {
+                    return getKey() + ":" + getValue();
                 }
             });
         }
@@ -118,11 +158,17 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void putSingle(String key, String value) {
-        add(key, value); // TODO is this an unsupported operation?
+        remove(key);
+        add(key, value);
     }
 
     @Override
     public void add(String key, String value) {
+        String old = headers.get(key);
+        if (old != null) {
+            remove(key);
+            value = old + ", " + value;
+        }
         headers = headers.with(key, value);
     }
 
@@ -134,20 +180,25 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     @Override
     public void addAll(String key, String... values) {
         for (String value : values) {
-            putSingle(key, value);
+            add(key, value);
         }
     }
 
     @Override
     public void addAll(String key, List<String> values) {
         for (String value : values) {
-            putSingle(key, value);
+            add(key, value);
         }
     }
 
     @Override
     public void addFirst(String key, String value) {
-        putSingle(key, value); // TODO multi-values
+        String old = headers.get(key);
+        if (old != null) {
+            remove(key);
+            value = value + ", " + old;
+        }
+        headers = headers.with(key, value);
     }
 
     @Override
@@ -164,5 +215,29 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
                 return false;
         }
         return true;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!(obj instanceof MultivaluedMap))
+            return false;
+        @SuppressWarnings("unchecked")
+        MultivaluedMap<String, String> that = (MultivaluedMap<String, String>) obj;
+        if (this.size() != that.size())
+            return false;
+        return this.entrySet().equals(that.entrySet());
+    }
+
+    @Override
+    public int hashCode() {
+        return entrySet().hashCode(); // AbstractSet.hashCode sums the hashes of all elements
+        // which is the same algorithm as MultivaluedHashMap (jax-rs 2.0) uses.
+    }
+
+    @Override
+    public String toString() {
+        return headers.toString();
     }
 }
