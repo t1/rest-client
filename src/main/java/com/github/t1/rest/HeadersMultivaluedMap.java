@@ -1,6 +1,5 @@
 package com.github.t1.rest;
 
-import static java.util.Arrays.*;
 import static java.util.Collections.*;
 
 import java.util.*;
@@ -16,12 +15,6 @@ import com.github.t1.rest.Headers.Header;
 /** Based on {@link Headers}; required for some JAX-RS calls; *not* strictly appendable */
 @AllArgsConstructor
 class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
-    private static final String WHITESPACE = "\\s*";
-
-    private static List<String> toMultiValue(String value) {
-        return asList(value.split(WHITESPACE + "," + WHITESPACE));
-    }
-
     private Headers headers;
 
     @Override
@@ -42,7 +35,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     @Override
     public boolean containsValue(Object value) {
         for (Header header : headers)
-            if (toMultiValue(header.value()).equals(value))
+            if (header.multiValue().equals(value))
                 return true;
         return false;
     }
@@ -51,7 +44,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     public List<String> get(Object key) {
         if (!containsKey(key))
             return null;
-        return toMultiValue(headers.get((String) key));
+        return headers.header((String) key).multiValue();
     }
 
     @Override
@@ -69,7 +62,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
             Headers newHeaders = new Headers();
             for (Header header : headers) {
                 if (header.isNamed(name)) {
-                    out = toMultiValue(header.value());
+                    out = header.multiValue();
                 } else {
                     newHeaders = newHeaders.with(header.name(), header.value());
                 }
@@ -93,7 +86,6 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public Set<String> keySet() {
-        // TODO reflect changes to the headers in this snapshot
         Set<String> set = new LinkedHashSet<>();
         for (Header header : headers)
             set.add(header.name());
@@ -102,16 +94,14 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public Collection<List<String>> values() {
-        // TODO reflect changes to the headers in this snapshot
         Set<List<String>> set = new LinkedHashSet<>();
         for (Header header : headers)
-            set.add(toMultiValue(header.value()));
+            set.add(header.multiValue());
         return unmodifiableSet(set);
     }
 
     @Override
     public Set<Map.Entry<String, List<String>>> entrySet() {
-        // TODO reflect changes to the headers in this snapshot
         Set<Map.Entry<String, List<String>>> set = new LinkedHashSet<>();
         for (final Header header : headers) {
             set.add(new Map.Entry<String, List<String>>() {
@@ -122,12 +112,12 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
                 @Override
                 public List<String> getValue() {
-                    return toMultiValue(header.value());
+                    return header.multiValue();
                 }
 
                 @Override
                 public List<String> setValue(List<String> value) {
-                    throw new UnsupportedOperationException(); // TODO set value
+                    throw new UnsupportedOperationException();
                 }
 
                 @Override
@@ -209,7 +199,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
             List<String> otherValues = otherMap.get(header.name());
             if (otherValues == null)
                 return false;
-            Set<String> thisValues = asSet(toMultiValue(header.value()));
+            Set<String> thisValues = asSet(header.multiValue());
             if (!thisValues.equals(asSet(otherValues))) {
                 return false;
             }

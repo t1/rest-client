@@ -16,7 +16,7 @@ import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
 
 /**
- * A {@link RestResource} plus headers to be sent. May be typed (see {@link TypedRestRequest}).
+ * A {@link RestResource} plus headers to be sent. May be typed (see {@link EntityRequest}).
  */
 @Slf4j
 @Getter
@@ -41,8 +41,12 @@ public class RestRequest {
         return resource.uri().toUri();
     }
 
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType) {
-        return new TypedRestRequest<>(resource, headers, acceptedType);
+    public <T> EntityRequest<T> accept(Class<T> acceptedType) {
+        return EntityRequest.of(resource, acceptedType, headers);
+    }
+
+    public EntityRequest<?> accept(Class<?> first, Class<?>... more) {
+        return EntityRequest.of(resource, headers, first, more);
     }
 
     /**
@@ -51,8 +55,12 @@ public class RestRequest {
      * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
-        return new TypedRestRequest<>(resource, headers, acceptedType, contentType);
+    public <T> EntityRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+        return EntityRequest.of(resource, acceptedType, contentType, headers);
+    }
+
+    public RestRequest header(String name, Object value) {
+        return new RestRequest(resource, headers.with(name, value));
     }
 
     protected void addHeaders(HttpMessage request) {
@@ -62,7 +70,7 @@ public class RestRequest {
     }
 
     protected CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
-        log.debug("execute {} on {}", request, request.getURI());
+        log.debug("execute {}", request);
         addHeaders(request);
         CloseableHttpResponse response = CLIENT.execute(request);
         expecting(response, OK);
@@ -90,9 +98,5 @@ public class RestRequest {
     @Override
     public String toString() {
         return resource + " ::: " + headers;
-    }
-
-    public RestRequest header(String name, Object value) {
-        return new RestRequest(resource, headers.with(name, value));
     }
 }

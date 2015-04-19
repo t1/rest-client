@@ -7,10 +7,6 @@ import javax.ws.rs.ext.MessageBodyReader;
 
 import com.github.t1.rest.fallback.*;
 
-/**
- * TODO it would be nice if we could reuse the MessageBodyReaders from the container, when available, but they don't
- * seem to be CDI beans, so how should we detect them?
- */
 public class RestConfig {
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
 
@@ -19,6 +15,7 @@ public class RestConfig {
         add(new JsonMessageBodyReader());
         add(new StringMessageBodyReader());
         add(new XmlMessageBodyReader());
+        add(new YamlMessageBodyReader());
     }
 
     public RestConfig add(MessageBodyReader<?> reader) {
@@ -27,7 +24,23 @@ public class RestConfig {
     }
 
     public <T> RestConverter<T> converterFor(Class<T> type) {
-        return converterFor(type, null);
+        RestConverter<T> result = new RestConverter<>(type);
+        addReadersFor(type, result);
+        return result;
+    }
+
+    public RestConverter<?> converterFor(Class<?> first, Class<?>... more) {
+        RestConverter<?> result = new RestConverter<>(Object.class);
+        addReadersFor(first, result);
+        for (Class<?> m : more)
+            addReadersFor(m, result);
+        return result;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void addReadersFor(Class<?> type, RestConverter<?> result) {
+        RestConverter<?> converter = converterFor(type, (MediaType) null);
+        result.readers().putAll((Map) converter.readers());
     }
 
     /**

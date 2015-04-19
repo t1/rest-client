@@ -11,6 +11,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyWriter;
 
 import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
+import com.github.t1.rest.fallback.ConverterTools;
 
 @Produces(WILDCARD)
 public class YamlMessageBodyWriter implements MessageBodyWriter<Object> {
@@ -18,7 +19,7 @@ public class YamlMessageBodyWriter implements MessageBodyWriter<Object> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return type != String.class && "application".equals(mediaType.getType())
+        return ConverterTools.isConvertible(type) && "application".equals(mediaType.getType())
                 && ("yaml".equals(mediaType.getSubtype()) || mediaType.getSubtype().endsWith("+yaml"));
     }
 

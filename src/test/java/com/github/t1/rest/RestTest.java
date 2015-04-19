@@ -1,7 +1,7 @@
 package com.github.t1.rest;
 
 import static ch.qos.logback.classic.Level.*;
-import static com.github.t1.rest.YamlMessageBodyReader.*;
+import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
@@ -36,8 +36,14 @@ public class RestTest {
         private int i;
     }
 
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor(access = PRIVATE)
+    public static class JsonPojo {
+        private String string;
+    }
+
     @VendorType("foo")
-    @XmlRootElement
     @NoArgsConstructor(access = PRIVATE)
     public static class FooVendorTypePojo extends Pojo {
         public FooVendorTypePojo(String string, int i) {
@@ -57,8 +63,25 @@ public class RestTest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
-    public static class JsonPojo {
-        private String string;
+    @VendorType
+    public static class BarVendorTypePojo {
+        String string;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor(access = PRIVATE)
+    @VendorType
+    public static class BazVendorTypePojo {
+        int integer;
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor(access = PRIVATE)
+    @VendorType
+    public static class BongVendorTypePojo {
+        Boolean bool;
     }
 
     @Path("/")
@@ -93,6 +116,26 @@ public class RestTest {
         public DefaultVendorTypePojo vpojo() {
             return new DefaultVendorTypePojo("v", 456);
         }
+
+        @GET
+        @Path("/barpojo")
+        public BarVendorTypePojo barpojo() {
+            return new BarVendorTypePojo("bar");
+        }
+
+        @GET
+        @Path("/bazpojo")
+        @Produces({ "application/vnd.com.github.t1.rest.resttest$bazvendortypepojo+json", APPLICATION_JSON })
+        public BazVendorTypePojo bazpojo() {
+            return new BazVendorTypePojo(789);
+        }
+
+        @GET
+        @Path("/bongpojo")
+        @Produces({ "application/vnd.com.github.t1.rest.resttest$bongvendortypepojo+json", APPLICATION_JSON })
+        public BongVendorTypePojo bongpojo() {
+            return new BongVendorTypePojo(true);
+        }
     }
 
     private final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
@@ -114,8 +157,6 @@ public class RestTest {
 
     @Before
     public void before() {
-        TypedRestRequest.CONFIG.add(new YamlMessageBodyReader());
-
         setLogLevel("org.apache.http.wire", DEBUG);
         setLogLevel("com.github.t1.rest", DEBUG);
     }
@@ -125,7 +166,7 @@ public class RestTest {
     }
 
     @SuppressWarnings("deprecation")
-    private <T> TypedRestRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
+    private <T> EntityRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
         return base().path(path).accept(type, mediaType);
     }
 
@@ -150,9 +191,32 @@ public class RestTest {
     }
 
     @Test
+    public void shouldGetPingResponse() {
+        EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+
+        assertEquals("pong", response.get());
+        assertEquals(TEXT_PLAIN_TYPE, response.contentType());
+        assertEquals((Integer) 4, response.contentLength());
+    }
+
+    @Test
+    public void shouldGetDirectPingResponse() {
+        EntityResponse<String> response = base().path("ping").getResponse(String.class);
+
+        assertEquals("pong", response.get());
+    }
+
+    @Test
+    public void shouldGetPingAsStream() throws Exception {
+        try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).get()) {
+            assertEquals("pong", ConverterTools.readString(pong, null));
+        }
+    }
+
+    @Test
     public void shouldAcceptType() {
         RestResource base = base();
-        TypedRestRequest<Pojo> rest = base.accept(Pojo.class);
+        EntityRequest<Pojo> rest = base.accept(Pojo.class);
 
         assertEquals(Pojo.class, rest.converter().acceptedType());
     }
@@ -165,7 +229,7 @@ public class RestTest {
     }
 
     @Test
-    public void shouldGetPojoAsAnything() {
+    public void shouldGetPojo() {
         Pojo pojo = base().path("pojo").accept(Pojo.class).get();
 
         assertEquals("s", pojo.getString());
@@ -179,12 +243,12 @@ public class RestTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToLimitTypeToSomethingNotConvertibleTo() {
-        baseAccept("jsonpojo", JsonPojo.class, APPLICATION_XML_TYPE);
+        baseAccept("jsonpojo", JsonPojo.class, TEXT_HTML_TYPE);
     }
 
     @Test
     public void shouldGetPojoAsJson() {
-        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
+        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
 
         Pojo pojo = request.get();
 
@@ -194,7 +258,7 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsXml() {
-        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
+        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
 
         Pojo pojo = request.get();
 
@@ -204,7 +268,7 @@ public class RestTest {
 
     @Test
     public void shouldGetPojoAsYaml() {
-        TypedRestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
+        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
 
         Pojo pojo = request.get();
 
@@ -215,7 +279,7 @@ public class RestTest {
     @Test
     public void shouldGetPojoAsFooVendorType() {
         MediaType vendorType = MediaType.valueOf("application/vnd.foo+json");
-        TypedRestRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
+        EntityRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
 
         FooVendorTypePojo pojo = request.get();
 
@@ -226,7 +290,7 @@ public class RestTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeJson() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json");
-        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.get();
 
@@ -237,7 +301,7 @@ public class RestTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeXml() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml");
-        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.get();
 
@@ -248,7 +312,7 @@ public class RestTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeYaml() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml");
-        TypedRestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.get();
 
@@ -257,9 +321,47 @@ public class RestTest {
     }
 
     @Test
-    public void shouldGetPingAsStream() throws Exception {
-        try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).get()) {
-            assertEquals("pong", ConverterTools.readString(pong, null));
-        }
+    public void shouldGetUntypedPojo() {
+        Pojo pojo = base().path("pojo").getResponse().get(Pojo.class);
+
+        assertEquals("s", pojo.getString());
+        assertEquals(123, pojo.getI());
     }
+
+    @Test
+    public void shouldGetTwoVendorTypesWithCommonBaseClass() {
+        EntityRequest<?> request = base().path("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
+        FooVendorTypePojo pojo = request.getResponse().get(FooVendorTypePojo.class);
+
+        assertEquals("f", pojo.getString());
+        assertEquals(345, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
+        EntityRequest<?> request = base().path("{path}") //
+                .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
+
+        EntityResponse<?> barResponse = request.with("path", "barpojo").getResponse();
+        assertEquals("application/vnd.com.github.t1.rest.resttest$barvendortypepojo+json", barResponse.contentType()
+                .toString());
+        BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
+        assertEquals("bar", bar.getString());
+
+        EntityResponse<?> bazResponse = request.with("path", "bazpojo").getResponse();
+        assertEquals("application/vnd.com.github.t1.rest.resttest$bazvendortypepojo+json", bazResponse.contentType()
+                .toString());
+        BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
+        assertEquals(789, baz.getInteger());
+
+        EntityResponse<?> bongResponse = request.with("path", "bongpojo").getResponse();
+        assertEquals("application/vnd.com.github.t1.rest.resttest$bongvendortypepojo+json", bongResponse.contentType()
+                .toString());
+        BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
+        assertEquals(true, bong.getBool());
+    }
+
+    // TODO check all types that are not convertible (according to spec) see ConverterTools
+    // TODO use MessageBodyReaders from container, but they don't seem to be CDI beans; how can we detect them?
+    // TODO limit readers to ConstrainedTo annotation
 }

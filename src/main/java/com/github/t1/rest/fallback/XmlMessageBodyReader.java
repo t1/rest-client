@@ -11,14 +11,13 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 import javax.xml.bind.JAXB;
-import javax.xml.bind.annotation.XmlRootElement;
 
 @Alternative
 @Consumes(APPLICATION_XML)
 public class XmlMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return ConverterTools.isConvertible(type) && type.isAnnotationPresent(XmlRootElement.class);
+        return ConverterTools.isConvertible(type);
     }
 
     @Override

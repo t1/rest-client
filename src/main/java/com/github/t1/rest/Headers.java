@@ -15,6 +15,16 @@ import com.github.t1.rest.Headers.Header;
 @Value
 @Getter(NONE)
 public class Headers implements Iterable<Header> {
+    private static final String ACCEPT = "Accept";
+    private static final String CONTENT_TYPE = "Content-Type";
+    private static final String CONTENT_LENGTH = "Content-Length";
+
+    private static final String WHITESPACE = "\\s*";
+
+    static List<String> toMultiValue(String value) {
+        return asList(value.split(WHITESPACE + "," + WHITESPACE));
+    }
+
     @Value
     public static class Header {
         String name, value;
@@ -37,6 +47,10 @@ public class Headers implements Iterable<Header> {
 
         public boolean isNamed(String name) {
             return this.name.equalsIgnoreCase(name);
+        }
+
+        public List<String> multiValue() {
+            return toMultiValue(value);
         }
     }
 
@@ -63,7 +77,23 @@ public class Headers implements Iterable<Header> {
     }
 
     public Headers contentType(MediaType mediaType) {
-        return with("Content-Type", mediaType);
+        return with(CONTENT_TYPE, mediaType);
+    }
+
+    public MediaType contentType() {
+        String contentType = get(CONTENT_TYPE);
+        if (contentType == null)
+            return null;
+        if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
+            contentType = contentType.substring(1, contentType.length() - 9);
+        return MediaType.valueOf(contentType);
+    }
+
+    public Integer contentLength() {
+        String contentLength = get(CONTENT_LENGTH);
+        if (contentLength == null)
+            return null;
+        return Integer.valueOf(contentLength);
     }
 
     public Headers accept(MediaType... mediaTypes) {
@@ -77,19 +107,32 @@ public class Headers implements Iterable<Header> {
                 out.append(", ");
             out.append(mediaType);
         }
-        return with("Accept", out.toString());
+        return with(ACCEPT, out.toString());
+    }
+
+    public List<MediaType> accept() {
+        List<MediaType> result = new ArrayList<>();
+        for (String value : header(ACCEPT).multiValue()) {
+            result.add(MediaType.valueOf(value));
+        }
+        return result;
     }
 
     public Headers with(String name, Object value) {
         return new Headers(new Header(name, value.toString()), this);
     }
 
-    public String get(String name) {
+    public Header header(String name) {
         if (head == null)
             return null;
         if (head.isNamed(name))
-            return head.value();
-        return tail.get(name);
+            return head;
+        return tail.header(name);
+    }
+
+    public String get(String name) {
+        Header header = header(name);
+        return (header == null) ? null : header.value();
     }
 
     public boolean contains(String name) {

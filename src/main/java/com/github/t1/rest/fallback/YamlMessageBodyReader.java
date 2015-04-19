@@ -1,6 +1,6 @@
-package com.github.t1.rest;
+package com.github.t1.rest.fallback;
 
-import static com.github.t1.rest.YamlMessageBodyReader.*;
+import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
@@ -12,7 +12,6 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import com.fasterxml.jackson.dataformat.yaml.snakeyaml.Yaml;
-import com.github.t1.rest.fallback.ConverterTools;
 
 @Alternative
 @Consumes(APPLICATION_YAML)

@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 
 public class ConverterTools {
     public static boolean isConvertible(Class<?> type) {
-        return type != String.class && type != InputStream.class; // TODO more types are not convertible
+        return type != String.class && type != InputStream.class;
     }
 
     public static String readString(InputStream in, MediaType mediaType) {

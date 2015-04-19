@@ -273,4 +273,9 @@ public class HeadersMultivaluedMapTest {
 
         assertNotEquals(map, "");
     }
+
+    // TODO write changes to HeadersMultivaluedMap#keySet()
+    // TODO write changes to HeadersMultivaluedMap#values()
+    // TODO write changes to HeadersMultivaluedMap#entrySet()
+    // TODO set value in HeadersMultivaluedMap#entrySet() -> setValue()
 }

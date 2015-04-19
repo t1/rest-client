@@ -54,8 +54,12 @@ public class RestResource {
         return new RestRequest(this);
     }
 
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType) {
+    public <T> EntityRequest<T> accept(Class<T> acceptedType) {
         return request().accept(acceptedType);
+    }
+
+    public EntityRequest<?> accept(Class<?> first, Class<?>... more) {
+        return request().accept(first, more);
     }
 
     /**
@@ -64,7 +68,7 @@ public class RestResource {
      * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> TypedRestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+    public <T> EntityRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
         return request().accept(acceptedType, contentType);
     }
 
@@ -72,12 +76,20 @@ public class RestResource {
         return request().header(name, value);
     }
 
-    public <T> T get(Class<T> acceptedType) {
-        return accept(acceptedType).get();
-    }
-
     public RestResource with(String name, Object value) {
         return new RestResource(uri.with(name, value));
+    }
+
+    public <T> EntityResponse<T> getResponse(Class<T> acceptedType) {
+        return accept(acceptedType).getResponse();
+    }
+
+    public EntityResponse<Object> getResponse() {
+        return accept(Object.class).getResponse();
+    }
+
+    public <T> T get(Class<T> acceptedType) {
+        return getResponse(acceptedType).get();
     }
 
     @Override

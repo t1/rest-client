@@ -7,12 +7,19 @@ import java.io.*;
 import java.util.*;
 
 import javax.ws.rs.Consumes;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Holds the java type that should be converted to and the converters to do the actual conversion for some content type
+ * returned by the http request.
+ * <p/>
+ * Important: The {@link #convert(InputStream, Headers)} method <b>closes</b> the stream with one exception: Iff the
+ * java type is {@link Closeable} (like an {@link InputStream}) and no exception occurs, the stream is left open.
+ */
 @Slf4j
 @Getter
 public class RestConverter<T> {
@@ -72,22 +79,21 @@ public class RestConverter<T> {
 
     public T convert(InputStream entityStream, Headers headers) {
         try {
-            MediaType mediaType = mediaType(headers);
+            MediaType mediaType = headers.contentType();
             MessageBodyReader<T> reader = converterFor(mediaType);
-            return reader.readFrom(acceptedType, acceptedType, null, mediaType, headers.toMultiValuedMap(),
-                    entityStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            MultivaluedMap<String, String> headerMap = headers.toMultiValuedMap();
+            T out = reader.readFrom(acceptedType, acceptedType, null, mediaType, headerMap, entityStream);
+            if (shouldClose())
+                entityStream.close();
+            return out;
+        } catch (Exception e) {
+            try {
+                entityStream.close();
+            } catch (IOException f) {
+                e.addSuppressed(f);
+            }
+            throw new RuntimeException("can't read", e);
         }
-    }
-
-    private MediaType mediaType(Headers headers) {
-        String contentType = headers.get("Content-Type");
-        if (contentType == null)
-            return null;
-        if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
-            contentType = contentType.substring(1, contentType.length() - 9);
-        return MediaType.valueOf(contentType);
     }
 
     private MessageBodyReader<T> converterFor(MediaType expected) {
