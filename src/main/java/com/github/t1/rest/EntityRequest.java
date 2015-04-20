@@ -1,12 +1,8 @@
 package com.github.t1.rest;
 
-import java.io.*;
-
 import javax.ws.rs.core.MediaType;
 
 import lombok.*;
-
-import org.apache.http.client.methods.*;
 
 @Value
 @EqualsAndHashCode(callSuper = true)
@@ -32,33 +28,15 @@ public class EntityRequest<T> extends RestRequest {
         return of(resource, headers, CONFIG.converterFor(acceptedType, contentType));
     }
 
-    public static <T> EntityRequest<T> of(RestResource resource, Headers headers, RestConverter<T> converter) {
+    public static <T> EntityRequest<T> of(RestResource resource, Headers headers, ResponseConverter<T> converter) {
         return new EntityRequest<>(resource, converter, headers.accept(converter.mediaTypes()));
     }
 
-    private final RestConverter<T> converter;
+    private final ResponseConverter<T> converter;
 
-    private EntityRequest(RestResource resource, RestConverter<T> converter, Headers headers) {
+    private EntityRequest(RestResource resource, ResponseConverter<T> converter, Headers headers) {
         super(resource, headers);
         this.converter = converter;
-    }
-
-    public T get() {
-        return getResponse().get();
-    }
-
-    /** the converter will close the stream */
-    @SuppressWarnings("resource")
-    public EntityResponse<T> getResponse() {
-        try {
-            CloseableHttpResponse apacheResponse = execute(new HttpGet(uri()));
-            Headers headers = convert(apacheResponse.getAllHeaders());
-            InputStream inputStream = apacheResponse.getEntity().getContent();
-            EntityResponse<T> entityResponse = new EntityResponse<>(converter, headers, inputStream);
-            return entityResponse;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override
@@ -69,5 +47,14 @@ public class EntityRequest<T> extends RestRequest {
     @Override
     public EntityRequest<T> with(String name, String value) {
         return new EntityRequest<>(resource.with(name, value), converter, headers.header(name, value));
+    }
+
+    public T get() {
+        return getResponse().get();
+    }
+
+    public EntityResponse<T> getResponse() {
+        GetRequest request = CONFIG.createGetRequest(uri(), headers);
+        return request.execute(converter);
     }
 }

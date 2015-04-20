@@ -22,12 +22,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Getter
-public class RestConverter<T> {
+public class ResponseConverter<T> {
     private final Class<T> acceptedType;
     private final VendorType vendorType;
     private final Map<MediaType, MessageBodyReader<T>> readers = new LinkedHashMap<>();
 
-    public RestConverter(Class<T> acceptedType) {
+    public ResponseConverter(Class<T> acceptedType) {
         this.acceptedType = acceptedType;
         this.vendorType = acceptedType.getAnnotation(VendorType.class);
     }

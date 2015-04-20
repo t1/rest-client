@@ -1,28 +1,16 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-
-import java.io.IOException;
 import java.net.URI;
 
-import javax.ws.rs.core.*;
-import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.MediaType;
 
 import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-
-import org.apache.http.*;
-import org.apache.http.client.methods.*;
-import org.apache.http.impl.client.*;
 
 /**
  * A {@link RestResource} plus headers to be sent. May be typed (see {@link EntityRequest}).
  */
-@Slf4j
 @Getter
 public class RestRequest {
-    private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
-
     @NonNull
     RestResource resource;
     @NonNull
@@ -69,38 +57,6 @@ public class RestRequest {
 
     public RestRequest header(String name, Object value) {
         return new RestRequest(resource, headers.header(name, value));
-    }
-
-    protected void addHeaders(HttpMessage request) {
-        for (Headers.Header header : headers) {
-            request.addHeader(header.name(), header.value());
-        }
-    }
-
-    protected CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
-        log.debug("execute {}", request);
-        addHeaders(request);
-        CloseableHttpResponse response = CLIENT.execute(request);
-        expecting(response, OK);
-        return response;
-    }
-
-    private void expecting(CloseableHttpResponse response, Status expectedStatus) {
-        if (!isStatus(response, expectedStatus))
-            throw new RuntimeException("expected status " + expectedStatus.getStatusCode() + " "
-                    + expectedStatus.getReasonPhrase() + " but got " + response.getStatusLine().getStatusCode() + " "
-                    + response.getStatusLine().getReasonPhrase());
-    }
-
-    private boolean isStatus(CloseableHttpResponse response, Status expected) {
-        return response.getStatusLine().getStatusCode() == expected.getStatusCode();
-    }
-
-    protected Headers convert(Header[] headers) {
-        Headers out = new Headers();
-        for (Header header : headers)
-            out = out.header(header.getName(), header.getValue());
-        return out;
     }
 
     public RestRequest with(String name, String value) {

@@ -2,6 +2,7 @@ package com.github.t1.rest;
 
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
+import static javax.ws.rs.core.MediaType.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
@@ -85,7 +86,7 @@ public class Headers implements Iterable<Header> {
     public MediaType contentType() {
         String contentType = get(CONTENT_TYPE);
         if (contentType == null)
-            return null;
+            return WILDCARD_TYPE;
         if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
             contentType = contentType.substring(1, contentType.length() - 9);
         return MediaType.valueOf(contentType);

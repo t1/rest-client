@@ -1,14 +1,20 @@
 package com.github.t1.rest;
 
+import java.net.URI;
 import java.util.*;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
+import lombok.*;
+
 import com.github.t1.rest.fallback.*;
 
 public class RestConfig {
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
+    @Getter
+    @Setter
+    private RequestFactory requestFactory = new RequestFactory();
 
     public RestConfig() {
         add(new InputStreamMessageBodyReader());
@@ -23,14 +29,14 @@ public class RestConfig {
         return this;
     }
 
-    public <T> RestConverter<T> converterFor(Class<T> type) {
-        RestConverter<T> result = new RestConverter<>(type);
+    public <T> ResponseConverter<T> converterFor(Class<T> type) {
+        ResponseConverter<T> result = new ResponseConverter<>(type);
         addReadersFor(type, result);
         return result;
     }
 
-    public RestConverter<?> converterFor(Class<?> first, Class<?>... more) {
-        RestConverter<?> result = new RestConverter<>(Object.class);
+    public ResponseConverter<?> converterFor(Class<?> first, Class<?>... more) {
+        ResponseConverter<?> result = new ResponseConverter<>(Object.class);
         addReadersFor(first, result);
         for (Class<?> m : more)
             addReadersFor(m, result);
@@ -38,8 +44,8 @@ public class RestConfig {
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private void addReadersFor(Class<?> type, RestConverter<?> result) {
-        RestConverter<?> converter = converterFor(type, (MediaType) null);
+    private void addReadersFor(Class<?> type, ResponseConverter<?> result) {
+        ResponseConverter<?> converter = converterFor(type, (MediaType) null);
         result.readers().putAll((Map) converter.readers());
     }
 
@@ -49,8 +55,8 @@ public class RestConfig {
      * complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> RestConverter<T> converterFor(Class<T> type, MediaType contentType) {
-        RestConverter<T> out = new RestConverter<>(type);
+    public <T> ResponseConverter<T> converterFor(Class<T> type, MediaType contentType) {
+        ResponseConverter<T> out = new ResponseConverter<>(type);
         for (MessageBodyReader<T> bean : this.<T> readers()) {
             out.addIfReadable(bean, contentType);
         }
@@ -62,5 +68,9 @@ public class RestConfig {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public <T> Iterable<MessageBodyReader<T>> readers() {
         return (List) readers;
+    }
+
+    public GetRequest createGetRequest(URI uri, Headers headers) {
+        return requestFactory.createGetRequest(uri, headers);
     }
 }
