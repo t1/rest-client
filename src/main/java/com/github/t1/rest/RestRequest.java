@@ -41,6 +41,10 @@ public class RestRequest {
         return resource.uri().toUri();
     }
 
+    public <T> T get(Class<T> type) {
+        return accept(type).get();
+    }
+
     public <T> EntityRequest<T> accept(Class<T> acceptedType) {
         return EntityRequest.of(resource, acceptedType, headers);
     }
@@ -59,8 +63,12 @@ public class RestRequest {
         return EntityRequest.of(resource, acceptedType, contentType, headers);
     }
 
+    public RestRequest basicAuth(String userName, String password) {
+        return new RestRequest(resource, headers.basicAuth(userName, password));
+    }
+
     public RestRequest header(String name, Object value) {
-        return new RestRequest(resource, headers.with(name, value));
+        return new RestRequest(resource, headers.header(name, value));
     }
 
     protected void addHeaders(HttpMessage request) {
@@ -91,8 +99,12 @@ public class RestRequest {
     protected Headers convert(Header[] headers) {
         Headers out = new Headers();
         for (Header header : headers)
-            out = out.with(header.getName(), header.getValue());
+            out = out.header(header.getName(), header.getValue());
         return out;
+    }
+
+    public RestRequest with(String name, String value) {
+        return new RestRequest(resource.with(name, value), headers.header(name, value));
     }
 
     @Override

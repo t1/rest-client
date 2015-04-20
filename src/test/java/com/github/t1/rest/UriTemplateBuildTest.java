@@ -1,7 +1,6 @@
 package com.github.t1.rest;
 
 import static com.github.t1.rest.UriTemplate.CommonScheme.*;
-import static com.github.t1.rest.UriTemplate.UriScheme.*;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -9,19 +8,20 @@ import org.junit.Test;
 import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
 import com.github.t1.rest.UriTemplate.Query;
 import com.github.t1.rest.UriTemplate.UriPath;
+import com.github.t1.rest.UriTemplate.UriScheme;
 
 public class UriTemplateBuildTest {
     @Test
     public void shouldBuildFull() {
         UriTemplate uri =
-                scheme("s").userInfo("u").host("h").port("po").absolutePath("pa").query("q", "v").fragment("f");
+                UriScheme.of("s").userInfo("u").host("h").port("po").absolutePath("pa").query("q", "v").fragment("f");
 
         assertEquals("s://u@h:po/pa?q=v#f", uri.toString());
     }
 
     @Test
     public void shouldBuildFullWithTemplates() {
-        UriTemplate uri = scheme("{s}").userInfo("{u}").host("{h}").port("{po}").absolutePath("{pa}") //
+        UriTemplate uri = UriScheme.of("{s}").userInfo("{u}").host("{h}").port("{po}").absolutePath("{pa}") //
                 .query("{q}", "{v}").fragment("{f}");
 
         assertEquals("{s}://{u}@{h}:{po}/{pa}?{q}={v}#{f}", uri.toString());
@@ -43,7 +43,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithoutUserInfo() {
-        UriTemplate uri = scheme("http").host("example.org").port("8080").absolutePath("path");
+        UriTemplate uri = UriScheme.of("http").host("example.org").port("8080").absolutePath("path");
 
         assertEquals("http://example.org:8080/path", uri.toString());
     }
@@ -57,14 +57,14 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithAuthority() {
-        UriTemplate uri = scheme("s").authority("u@h:po").absolutePath("pa");
+        UriTemplate uri = UriScheme.of("s").authority("u@h:po").absolutePath("pa");
 
         assertEquals("s://u@h:po/pa", uri.toString());
     }
 
     @Test
     public void shouldBuildWithRegistryAuthority() {
-        UriTemplate uri = scheme("s").authority("räg").absolutePath("pa");
+        UriTemplate uri = UriScheme.of("s").authority("räg").absolutePath("pa");
 
         assertEquals("s://räg/pa", uri.toString());
     }

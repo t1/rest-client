@@ -72,6 +72,10 @@ public class RestResource {
         return request().accept(acceptedType, contentType);
     }
 
+    public RestRequest basicAuth(String userName, String password) {
+        return request().basicAuth(userName, password);
+    }
+
     public RestRequest header(String name, Object value) {
         return request().header(name, value);
     }

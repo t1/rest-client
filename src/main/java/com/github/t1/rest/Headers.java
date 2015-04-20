@@ -2,6 +2,7 @@ package com.github.t1.rest;
 
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
+import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
 import java.util.*;
@@ -18,6 +19,7 @@ public class Headers implements Iterable<Header> {
     private static final String ACCEPT = "Accept";
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String CONTENT_LENGTH = "Content-Length";
+    private static final String AUTHORIZATION = "Authorization";
 
     private static final String WHITESPACE = "\\s*";
 
@@ -77,7 +79,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public Headers contentType(MediaType mediaType) {
-        return with(CONTENT_TYPE, mediaType);
+        return header(CONTENT_TYPE, mediaType);
     }
 
     public MediaType contentType() {
@@ -107,7 +109,7 @@ public class Headers implements Iterable<Header> {
                 out.append(", ");
             out.append(mediaType);
         }
-        return with(ACCEPT, out.toString());
+        return header(ACCEPT, out.toString());
     }
 
     public List<MediaType> accept() {
@@ -118,7 +120,15 @@ public class Headers implements Iterable<Header> {
         return result;
     }
 
-    public Headers with(String name, Object value) {
+    public Headers basicAuth(String userName, String password) {
+        return header(AUTHORIZATION, "Basic " + base64(userName + ":" + password));
+    }
+
+    private String base64(String string) {
+        return printBase64Binary(string.getBytes());
+    }
+
+    public Headers header(String name, Object value) {
         return new Headers(new Header(name, value.toString()), this);
     }
 

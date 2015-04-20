@@ -3,6 +3,7 @@ package com.github.t1.rest;
 import static ch.qos.logback.classic.Level.*;
 import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
@@ -136,6 +137,14 @@ public class RestTest {
         public BongVendorTypePojo bongpojo() {
             return new BongVendorTypePojo(true);
         }
+
+        @GET
+        @Path("/authorized-pojo")
+        public Pojo authorizedPojo(@HeaderParam("Authorization") String auth) {
+            if (!"Basic dXNlcjpwYXNz".equals(auth))
+                throw new WebApplicationException(UNAUTHORIZED);
+            return new Pojo("authorized", 987);
+        }
     }
 
     private final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
@@ -231,6 +240,14 @@ public class RestTest {
     @Test
     public void shouldGetPojo() {
         Pojo pojo = base().path("pojo").accept(Pojo.class).get();
+
+        assertEquals("s", pojo.getString());
+        assertEquals(123, pojo.getI());
+    }
+
+    @Test
+    public void shouldGetPojoWithPathVariable() {
+        Pojo pojo = base().path("{path}").accept(Pojo.class).with("path", "pojo").get();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -359,6 +376,14 @@ public class RestTest {
                 .toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
+    }
+
+    @Test
+    public void shouldAuthorize() {
+        Pojo pojo = base().path("authorized-pojo").basicAuth("user", "pass").get(Pojo.class);
+
+        assertEquals("authorized", pojo.getString());
+        assertEquals(987, pojo.getI());
     }
 
     // TODO check all types that are not convertible (according to spec) see ConverterTools

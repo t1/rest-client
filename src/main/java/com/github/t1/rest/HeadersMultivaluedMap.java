@@ -64,7 +64,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
                 if (header.isNamed(name)) {
                     out = header.multiValue();
                 } else {
-                    newHeaders = newHeaders.with(header.name(), header.value());
+                    newHeaders = newHeaders.header(header.name(), header.value());
                 }
             }
             this.headers = newHeaders;
@@ -159,7 +159,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
             remove(key);
             value = old + ", " + value;
         }
-        headers = headers.with(key, value);
+        headers = headers.header(key, value);
     }
 
     @Override
@@ -188,7 +188,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
             remove(key);
             value = value + ", " + old;
         }
-        headers = headers.with(key, value);
+        headers = headers.header(key, value);
     }
 
     @Override

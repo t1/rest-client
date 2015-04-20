@@ -19,8 +19,7 @@ public class YamlMessageBodyWriter implements MessageBodyWriter<Object> {
 
     @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
-        return ConverterTools.isConvertible(type) && "application".equals(mediaType.getType())
-                && ("yaml".equals(mediaType.getSubtype()) || mediaType.getSubtype().endsWith("+yaml"));
+        return ConverterTools.isConvertible(type) && ConverterTools.isApplicationType(mediaType, "yaml");
     }
 
     @Override

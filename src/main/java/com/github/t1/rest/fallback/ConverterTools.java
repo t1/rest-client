@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 
 public class ConverterTools {
     public static boolean isConvertible(Class<?> type) {
-        return type != String.class && type != InputStream.class;
+        return type != String.class && !Closeable.class.isAssignableFrom(type);
     }
 
     public static String readString(InputStream in, MediaType mediaType) {
@@ -36,4 +36,8 @@ public class ConverterTools {
         return out.toString();
     }
 
+    public static boolean isApplicationType(MediaType mediaType, String subType) {
+        return "application".equals(mediaType.getType())
+                && (subType.equals(mediaType.getSubtype()) || mediaType.getSubtype().endsWith("+" + subType));
+    }
 }

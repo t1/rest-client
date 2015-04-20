@@ -63,10 +63,11 @@ public class EntityRequest<T> extends RestRequest {
 
     @Override
     public EntityRequest<T> header(String name, Object value) {
-        return new EntityRequest<>(resource, converter, headers.with(name, value));
+        return new EntityRequest<>(resource, converter, headers.header(name, value));
     }
 
+    @Override
     public EntityRequest<T> with(String name, String value) {
-        return new EntityRequest<>(resource.with(name, value), converter, headers.with(name, value));
+        return new EntityRequest<>(resource.with(name, value), converter, headers.header(name, value));
     }
 }

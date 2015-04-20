@@ -37,7 +37,7 @@ public class RestConverter<T> {
     }
 
     void addIfReadable(MessageBodyReader<T> reader, MediaType limitedType) {
-        log.info("consider {} for {}:{}", reader.getClass(), acceptedType, vendorType);
+        log.debug("consider {} for {}:{}", reader.getClass(), acceptedType, vendorType);
         for (MediaType rawMediaType : mediaTypes(reader)) {
             MediaType mediaType = vendored(rawMediaType);
             if (isReadable(mediaType, reader, limitedType)) {

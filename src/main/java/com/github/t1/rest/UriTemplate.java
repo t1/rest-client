@@ -25,7 +25,7 @@ public abstract class UriTemplate {
         if (!matcher.matches())
             throw new IllegalArgumentException("unparseable uri: " + uri);
 
-        NonFragment uriTemplate = UriScheme.scheme(matcher.group("scheme")) //
+        NonFragment uriTemplate = UriScheme.of(matcher.group("scheme")) //
                 .schemeSpecificPart(matcher.group("schemeSpecificPart"));
         String fragment = matcher.group("fragment");
         if (fragment == null)
@@ -41,8 +41,19 @@ public abstract class UriTemplate {
     }
 
     public static class UriScheme extends NonAuthority {
-        public static UriScheme scheme(String scheme) {
+        public static UriScheme of(URI uri) {
+            return of(uri.getScheme());
+        }
+
+        public static UriScheme of(String scheme) {
             return new UriScheme(scheme);
+        }
+
+        private final String scheme;
+
+        private UriScheme(String scheme) {
+            super(null); // has no previous
+            this.scheme = scheme;
         }
 
         public NonFragment schemeSpecificPart(String schemeSpecificPart) {
@@ -52,13 +63,6 @@ public abstract class UriTemplate {
                 return authorityAndMore(schemeSpecificPart.substring(2));
             return pathAndMore(schemeSpecificPart);
         }
-
-        private UriScheme(String scheme) {
-            super(null); // has no previous
-            this.scheme = scheme;
-        }
-
-        private final String scheme;
 
         @Override
         public String toString() {
@@ -82,7 +86,7 @@ public abstract class UriTemplate {
         https;
 
         public UriScheme scheme() {
-            return UriScheme.scheme(name());
+            return UriScheme.of(name());
         }
 
         public UriAuthority authority(String authority) {

@@ -25,12 +25,12 @@ public class HeadersTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToAddHeaderWithNullName() {
-        new Headers().with(null, "foo");
+        new Headers().header(null, "foo");
     }
 
     @Test(expected = NullPointerException.class)
     public void shouldFailToAddHeaderWithNullValue() {
-        new Headers().with("foo", null);
+        new Headers().header("foo", null);
     }
 
     @Test
@@ -45,7 +45,7 @@ public class HeadersTest {
 
     @Test
     public void shouldCreateSingleHeaders() {
-        Headers headers = new Headers().with("Key", true);
+        Headers headers = new Headers().header("Key", true);
 
         assertEquals(1, headers.size());
         Iterator<Header> i = headers.iterator();
@@ -61,7 +61,7 @@ public class HeadersTest {
 
     @Test
     public void shouldCreateTwoHeaders() {
-        Headers headers = new Headers().with("One", true).with("Two", 2);
+        Headers headers = new Headers().header("One", true).header("Two", 2);
 
         assertEquals(2, headers.size());
         Iterator<Header> i = headers.iterator();
@@ -81,7 +81,7 @@ public class HeadersTest {
 
     @Test
     public void shouldCreateThreeHeaders() {
-        Headers headers = new Headers().with("One", true).with("Two", 2).with("Three", 3.0);
+        Headers headers = new Headers().header("One", true).header("Two", 2).header("Three", 3.0);
 
         assertEquals(3, headers.size());
         Iterator<Header> i = headers.iterator();
@@ -103,9 +103,9 @@ public class HeadersTest {
     @Test
     public void shouldJustAppendHeaders() {
         Headers zero = new Headers();
-        Headers one = zero.with("One", true);
-        Headers two = one.with("Two", 2);
-        Headers three = two.with("Three", 3.0);
+        Headers one = zero.header("One", true);
+        Headers two = one.header("Two", 2);
+        Headers three = two.header("Three", 3.0);
 
         assertEquals(0, zero.size());
         assertEquals(1, one.size());
@@ -115,18 +115,18 @@ public class HeadersTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldCheckForDuplicateHeaders() {
-        new Headers().with("Key", 1).with("Key", 2);
+        new Headers().header("Key", 1).header("Key", 2);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldCheckForDuplicateHeadersDifferentCase() {
-        new Headers().with("KEY", 1).with("key", 2);
+        new Headers().header("KEY", 1).header("key", 2);
     }
 
     @Test
     @Ignore
     public void shouldCollectHeaders() {
-        Headers headers = new Headers().with("Key", 1).with("Key", 2);
+        Headers headers = new Headers().header("Key", 1).header("Key", 2);
 
         assertEquals(1, headers.size());
         Iterator<Header> i = headers.iterator();
