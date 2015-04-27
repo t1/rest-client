@@ -25,6 +25,10 @@ public class RestRequest {
         this.headers = headers;
     }
 
+    public String authority() {
+        return resource.authority();
+    }
+
     public URI uri() {
         return resource.uri().toUri();
     }

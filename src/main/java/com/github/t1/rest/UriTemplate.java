@@ -7,13 +7,14 @@ import java.net.URI;
 import java.util.List;
 import java.util.regex.*;
 
-import lombok.RequiredArgsConstructor;
+import lombok.*;
 import lombok.experimental.ExtensionMethod;
 
 import com.github.t1.rest.UriAuthority.HostBasedAuthority;
 import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
 
 /** Immutable, fluent, strictly appendable builder for URI templates. */
+@EqualsAndHashCode
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 public abstract class UriTemplate {
@@ -40,6 +41,7 @@ public abstract class UriTemplate {
         return list;
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class UriScheme extends NonAuthority {
         public static UriScheme of(URI uri) {
             return of(uri.getScheme());
@@ -231,6 +233,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class AbsolutePath extends UriPath {
         private final String path;
 
@@ -255,6 +258,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class PathElement extends UriPath {
         private final String path;
 
@@ -279,6 +283,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class MatrixPath extends UriPath {
         private final String key;
         private final String value;
@@ -329,6 +334,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @EqualsAndHashCode(callSuper = true)
     public static class Query extends NonFragment {
         private Query(UriTemplate before, String keyValue) {
             this(before, key(keyValue), value(keyValue));

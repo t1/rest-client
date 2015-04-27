@@ -55,6 +55,8 @@ public abstract class UriAuthority extends NonPath {
                 .build();
     }
 
+    @Getter
+    @EqualsAndHashCode(callSuper = true)
     public static class RegistryBasedAuthority extends UriAuthority {
         private final String registryName;
 
@@ -82,6 +84,7 @@ public abstract class UriAuthority extends NonPath {
 
     @Getter
     @Builder
+    @EqualsAndHashCode(callSuper = true)
     public static class HostBasedAuthority extends UriAuthority {
         public static class HostBasedAuthorityBuilder {
             @Setter

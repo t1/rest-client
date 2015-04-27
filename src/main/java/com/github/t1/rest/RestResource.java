@@ -34,6 +34,10 @@ public class RestResource {
         this.uri = check(uri);
     }
 
+    public String authority() {
+        return uri.authority();
+    }
+
     private static NonFragment check(UriTemplate uri) {
         if (!ALLOWED_SCHEMES.contains(uri.scheme()))
             throw new RuntimeException("unsupported scheme for REST: " + uri.scheme());
