@@ -1,6 +1,7 @@
 package com.github.t1.rest;
 
 import static ch.qos.logback.classic.Level.*;
+import static com.github.t1.rest.fallback.InputStreamMessageBodyReader.*;
 import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
@@ -95,6 +96,13 @@ public class RestTest {
         }
 
         @GET
+        @Path("/java-archive")
+        @Produces(APPLICATION_JAVA_ARCHIVE)
+        public String javaArchive() {
+            return "this-is-a-jar";
+        }
+
+        @GET
         @Path("/pojo")
         public Pojo pojo() {
             return new Pojo("s", 123);
@@ -147,15 +155,9 @@ public class RestTest {
         }
     }
 
-    private final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
+    @ClassRule
+    public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
             new YamlMessageBodyWriter());
-
-    // this rule must be on a method so this bean is valid for CDI-Unit which makes it application scoped,
-    // i.e. it must not have any public fields
-    @Rule
-    public DropwizardClientRule service() {
-        return service;
-    }
 
     @Inject
     RestConfig rest = new RestConfig();
@@ -219,6 +221,13 @@ public class RestTest {
     public void shouldGetPingAsStream() throws Exception {
         try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).get()) {
             assertEquals("pong", ConverterTools.readString(pong, null));
+        }
+    }
+
+    @Test
+    public void shouldGetJavaArchiveStream() throws Exception {
+        try (InputStream pong = baseAccept("java-archive", InputStream.class, APPLICATION_JAVA_ARCHIVE_TYPE).get()) {
+            assertEquals("this-is-a-jar", ConverterTools.readString(pong, null));
         }
     }
 
