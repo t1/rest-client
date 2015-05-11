@@ -233,8 +233,7 @@ public class RestTest {
 
     @Test
     public void shouldAcceptType() {
-        RestResource base = base();
-        EntityRequest<Pojo> rest = base.accept(Pojo.class);
+        EntityRequest<Pojo> rest = base().accept(Pojo.class);
 
         assertEquals(Pojo.class, rest.converter().acceptedType());
     }
@@ -396,6 +395,12 @@ public class RestTest {
     }
 
     // TODO check all types that are not convertible (according to spec) see ConverterTools
+    // TODO safely encode all uri parts: template replacements as well as fixed strings
+    // TODO safely endode all headers: template replacements as well as fixed strings
+    // TODO subtype mapping with fq class name or annotations
+    // TODO expecting via Response object
+    // TODO full mappings (via joda-convert:struct)
+    // TODO writers for PUT, POST, PATCH
     // TODO use MessageBodyReaders from container, but they don't seem to be CDI beans; how can we detect them?
     // TODO limit readers to ConstrainedTo annotation
 }

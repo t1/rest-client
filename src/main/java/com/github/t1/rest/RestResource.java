@@ -49,6 +49,11 @@ public class RestResource {
         return new RestResource(subPath);
     }
 
+    public RestResource matrix(String name, Object value) {
+        NonFragment subPath = ((UriPath) this.uri).matrix(name, value.toString());
+        return new RestResource(subPath);
+    }
+
     public RestResource query(String key, String value) {
         NonFragment subPath = this.uri.query(key, value);
         return new RestResource(subPath);
