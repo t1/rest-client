@@ -70,7 +70,7 @@ public class RestConfig {
         return (List) readers;
     }
 
-    public GetRequest createGetRequest(URI uri, Headers headers) {
-        return requestFactory.createGetRequest(uri, headers);
+    public <T> GetRequest<T> createGetRequest(URI uri, Headers headers, ResponseConverter<T> converter) {
+        return requestFactory.createGetRequest(uri, headers, converter);
     }
 }

@@ -1,11 +1,13 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-
-import java.io.*;
+import java.io.IOException;
 
 import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.Status.Family;
+import javax.ws.rs.core.Response.StatusType;
 
+import lombok.*;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.http.client.config.RequestConfig;
@@ -14,6 +16,22 @@ import org.apache.http.impl.client.*;
 
 @Slf4j
 public abstract class HttpRequest {
+    @Value
+    @Accessors(fluent = false)
+    private final class UnknownStatus implements StatusType {
+        int statusCode;
+
+        @Override
+        public Family getFamily() {
+            return Family.familyOf(statusCode);
+        }
+
+        @Override
+        public String getReasonPhrase() {
+            return "Unknown";
+        }
+    }
+
     private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
 
     public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1;
@@ -46,41 +64,43 @@ public abstract class HttpRequest {
         request.setConfig(config);
     }
 
-    /** The {@link EntityResponse} is responsible to close the input stream */
+    /** The {@link RestResponse}/{@link EntityResponse} is responsible to close the input stream */
     @SuppressWarnings("resource")
-    public <T> EntityResponse<T> execute(ResponseConverter<T> converter) {
+    @SneakyThrows(IOException.class)
+    public RestResponse execute() {
+        log.debug("execute {}", request);
+        CloseableHttpResponse apacheResponse = null;
         try {
-            CloseableHttpResponse apacheResponse = execute(request);
-            Headers responseHeaders = convert(apacheResponse.getAllHeaders());
-            InputStream responseStream = apacheResponse.getEntity().getContent();
-            return new EntityResponse<>(converter, responseHeaders, responseStream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            apacheResponse = CLIENT.execute(request);
+            return convert(apacheResponse);
+        } catch (Exception e) {
+            // we are very conservative here: if the converting fails, the connection has to be closed
+            // but not when it can be passed to the EntityResponse
+            if (apacheResponse != null) {
+                try {
+                    apacheResponse.close();
+                } catch (Exception e2) {
+                    e.addSuppressed(e2);
+                }
+            }
+            throw e;
         }
     }
 
-    private CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
-        log.debug("execute {}", request);
-        CloseableHttpResponse response = CLIENT.execute(request);
-        expecting(response, OK);
-        return response;
-    }
+    protected abstract RestResponse convert(CloseableHttpResponse apacheResponse);
 
-    private void expecting(CloseableHttpResponse response, Status expectedStatus) {
-        if (!isStatus(response, expectedStatus))
-            throw new RuntimeException("expected status " + expectedStatus.getStatusCode() + " "
-                    + expectedStatus.getReasonPhrase() + " but got " + response.getStatusLine().getStatusCode() + " "
-                    + response.getStatusLine().getReasonPhrase());
-    }
-
-    private boolean isStatus(CloseableHttpResponse response, Status expected) {
-        return response.getStatusLine().getStatusCode() == expected.getStatusCode();
-    }
-
-    private Headers convert(org.apache.http.Header[] headers) {
+    protected Headers convert(org.apache.http.Header[] headers) {
         Headers out = new Headers();
         for (org.apache.http.Header header : headers)
             out = out.header(header.getName(), header.getValue());
         return out;
+    }
+
+    protected StatusType status(CloseableHttpResponse apacheResponse) {
+        final int code = apacheResponse.getStatusLine().getStatusCode();
+        StatusType status = Status.fromStatusCode(code);
+        if (status == null)
+            status = new UnknownStatus(code);
+        return status;
     }
 }

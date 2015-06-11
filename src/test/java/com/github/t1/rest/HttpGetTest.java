@@ -3,6 +3,7 @@ package com.github.t1.rest;
 import static ch.qos.logback.classic.Level.*;
 import static com.github.t1.rest.fallback.InputStreamMessageBodyReader.*;
 import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
+import static java.util.Arrays.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static lombok.AccessLevel.*;
@@ -13,7 +14,7 @@ import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import lombok.*;
@@ -152,6 +153,12 @@ public class HttpGetTest {
             if (!"Basic dXNlcjpwYXNz".equals(auth))
                 throw new WebApplicationException(UNAUTHORIZED);
             return new Pojo("authorized", 987);
+        }
+
+        @GET
+        @Path("/no-content")
+        public Response noContent() {
+            return Response.status(NO_CONTENT).build();
         }
     }
 
@@ -362,7 +369,6 @@ public class HttpGetTest {
         assertEquals(345, pojo.getI());
     }
 
-
     @Test
     public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
         EntityRequest<?> request = base().path("{path}") //
@@ -393,6 +399,18 @@ public class HttpGetTest {
 
         assertEquals("authorized", pojo.getString());
         assertEquals(987, pojo.getI());
+    }
+
+    @Test
+    public void shouldExpectOk() {
+        try {
+            base().path("no-content").get(String.class);
+            fail("expected UnexpectedStatusException");
+        } catch (UnexpectedStatusException e) {
+            assertEquals(NO_CONTENT, e.actual());
+            assertEquals(asList(OK), e.expected());
+            assertEquals("expected status 200 OK but got 204 No Content", e.getMessage());
+        }
     }
 
     // TODO check all types that are not convertible (according to spec) see ConverterTools

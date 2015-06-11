@@ -54,7 +54,7 @@ public class EntityRequest<T> extends RestRequest {
     }
 
     public EntityResponse<T> getResponse() {
-        GetRequest request = CONFIG.createGetRequest(uri(), headers);
-        return request.execute(converter);
+        GetRequest<T> request = CONFIG.createGetRequest(uri(), headers, converter);
+        return request.execute();
     }
 }
