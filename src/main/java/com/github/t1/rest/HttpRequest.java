@@ -3,26 +3,47 @@ package com.github.t1.rest;
 import static javax.ws.rs.core.Response.Status.*;
 
 import java.io.*;
-import java.net.URI;
 
 import javax.ws.rs.core.Response.Status;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.*;
 
 @Slf4j
-public class GetRequest {
+public abstract class HttpRequest {
     private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
 
-    private final Headers requestHeaders;
-    private final HttpUriRequest request;
+    public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1;
+    public static final int DEFAULT_CONNECT_TIMEOUT = 1_000;
+    public static final int DEFAULT_SOCKET_TIMEOUT = 5_000;
 
-    public GetRequest(URI uri, Headers requestHeaders) {
+    private final RequestConfig config = RequestConfig.custom() //
+            .setConnectionRequestTimeout(DEFAULT_CONNECTION_REQUEST_TIMEOUT) //
+            .setConnectTimeout(DEFAULT_CONNECT_TIMEOUT) //
+            .setSocketTimeout(DEFAULT_SOCKET_TIMEOUT) //
+            .build();
+
+    private final Headers requestHeaders;
+    private final HttpRequestBase request;
+
+    public HttpRequest(HttpRequestBase request, Headers requestHeaders) {
         this.requestHeaders = requestHeaders;
-        this.request = new HttpGet(uri);
+        this.request = request;
         addRequestHeaders();
+        setConfig();
+    }
+
+    private void addRequestHeaders() {
+        for (Headers.Header header : requestHeaders) {
+            request.addHeader(header.name(), header.value());
+        }
+    }
+
+    private void setConfig() {
+        request.setConfig(config);
     }
 
     /** The {@link EntityResponse} is responsible to close the input stream */
@@ -38,13 +59,7 @@ public class GetRequest {
         }
     }
 
-    protected void addRequestHeaders() {
-        for (Headers.Header header : requestHeaders) {
-            request.addHeader(header.name(), header.value());
-        }
-    }
-
-    protected CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
+    private CloseableHttpResponse execute(HttpUriRequest request) throws IOException {
         log.debug("execute {}", request);
         CloseableHttpResponse response = CLIENT.execute(request);
         expecting(response, OK);
@@ -62,7 +77,7 @@ public class GetRequest {
         return response.getStatusLine().getStatusCode() == expected.getStatusCode();
     }
 
-    protected Headers convert(org.apache.http.Header[] headers) {
+    private Headers convert(org.apache.http.Header[] headers) {
         Headers out = new Headers();
         for (org.apache.http.Header header : headers)
             out = out.header(header.getName(), header.getValue());

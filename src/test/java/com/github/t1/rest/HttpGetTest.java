@@ -28,7 +28,7 @@ import ch.qos.logback.classic.*;
 import com.github.t1.rest.fallback.ConverterTools;
 
 @RunWith(CdiRunner.class)
-public class RestTest {
+public class HttpGetTest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
@@ -134,14 +134,14 @@ public class RestTest {
 
         @GET
         @Path("/bazpojo")
-        @Produces({ "application/vnd.com.github.t1.rest.resttest$bazvendortypepojo+json", APPLICATION_JSON })
+        @Produces({ "application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json", APPLICATION_JSON })
         public BazVendorTypePojo bazpojo() {
             return new BazVendorTypePojo(789);
         }
 
         @GET
         @Path("/bongpojo")
-        @Produces({ "application/vnd.com.github.t1.rest.resttest$bongvendortypepojo+json", APPLICATION_JSON })
+        @Produces({ "application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json", APPLICATION_JSON })
         public BongVendorTypePojo bongpojo() {
             return new BongVendorTypePojo(true);
         }
@@ -362,26 +362,27 @@ public class RestTest {
         assertEquals(345, pojo.getI());
     }
 
+
     @Test
     public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
         EntityRequest<?> request = base().path("{path}") //
                 .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
 
         EntityResponse<?> barResponse = request.with("path", "barpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.resttest$barvendortypepojo+json", barResponse.contentType()
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json", barResponse.contentType()
                 .toString());
         BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
         EntityResponse<?> bazResponse = request.with("path", "bazpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.resttest$bazvendortypepojo+json", bazResponse.contentType()
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json", bazResponse.contentType()
                 .toString());
         BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
         EntityResponse<?> bongResponse = request.with("path", "bongpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.resttest$bongvendortypepojo+json", bongResponse.contentType()
-                .toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json", bongResponse
+                .contentType().toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
     }
