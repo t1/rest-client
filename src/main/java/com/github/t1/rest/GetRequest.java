@@ -31,6 +31,6 @@ public class GetRequest<T> extends HttpRequest {
         StatusType status = status(apacheResponse);
         HttpEntity entity = apacheResponse.getEntity();
         InputStream responseStream = (entity == null) ? null : entity.getContent();
-        return new EntityResponse<>(converter, status, responseHeaders, responseStream);
+        return new EntityResponse<>(status, responseHeaders, converter, responseStream);
     }
 }

@@ -6,12 +6,13 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.Status.Family;
 import javax.ws.rs.core.Response.StatusType;
 
-import lombok.*;
+import lombok.Value;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.*;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.*;
 
 @Slf4j
@@ -66,23 +67,20 @@ public abstract class HttpRequest {
 
     /** The {@link RestResponse}/{@link EntityResponse} is responsible to close the input stream */
     @SuppressWarnings("resource")
-    @SneakyThrows(IOException.class)
     public RestResponse execute() {
         log.debug("execute {}", request);
         CloseableHttpResponse apacheResponse = null;
         try {
             apacheResponse = CLIENT.execute(request);
             return convert(apacheResponse);
-        } catch (Exception e) {
-            // we are very conservative here: if the converting fails, the connection has to be closed
-            // but not when it can be passed to the EntityResponse
-            if (apacheResponse != null) {
-                try {
-                    apacheResponse.close();
-                } catch (Exception e2) {
-                    e.addSuppressed(e2);
-                }
-            }
+        } catch (ConnectTimeoutException e) {
+            close(apacheResponse, e);
+            throw new HttpTimeoutException("can't execute " + request, e);
+        } catch (IOException e) {
+            close(apacheResponse, e);
+            throw new RuntimeException("can't execute " + request, e);
+        } catch (RuntimeException e) {
+            close(apacheResponse, e);
             throw e;
         }
     }
@@ -102,5 +100,17 @@ public abstract class HttpRequest {
         if (status == null)
             status = new UnknownStatus(code);
         return status;
+    }
+
+    // we are very conservative with this: if the converting fails, the connection has to be closed
+    // but not when it can be passed to the EntityResponse
+    private void close(CloseableHttpResponse apacheResponse, Exception e) {
+        if (apacheResponse != null) {
+            try {
+                apacheResponse.close();
+            } catch (Exception e2) {
+                e.addSuppressed(e2);
+            }
+        }
     }
 }

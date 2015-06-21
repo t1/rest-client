@@ -26,7 +26,7 @@ public class RestClientMockRule extends ExternalResource {
                 public EntityResponse<Object> answer(InvocationOnMock invocation) {
                     ResponseConverter<Object> responseConverter = invocation.getArgumentAt(0, ResponseConverter.class);
                     ByteArrayInputStream inputStream = new ByteArrayInputStream(string.getBytes());
-                    return new EntityResponse<>(responseConverter, OK, headers, inputStream);
+                    return new EntityResponse<>(OK, headers, responseConverter, inputStream);
                 }
             });
         }

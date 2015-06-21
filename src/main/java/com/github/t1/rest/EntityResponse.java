@@ -10,7 +10,7 @@ public class EntityResponse<T> extends RestResponse {
     private final ResponseConverter<T> converter;
     private final InputStream inputStream;
 
-    public EntityResponse(ResponseConverter<T> converter, StatusType status, Headers headers, InputStream inputStream) {
+    public EntityResponse(StatusType status, Headers headers, ResponseConverter<T> converter, InputStream inputStream) {
         super(status, headers);
         this.converter = converter;
         this.inputStream = inputStream;
