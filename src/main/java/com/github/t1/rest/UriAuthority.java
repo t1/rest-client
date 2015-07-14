@@ -98,13 +98,13 @@ public abstract class UriAuthority extends NonPath {
         }
 
         public HostBasedAuthority host(String host) {
-            assert host == null : "shouldn't change host";
-            assert port == null : "shouldn't change port";
+            assert this.host == null : "shouldn't change host";
+            assert this.port == null : "shouldn't change port";
             return new HostBasedAuthority((NonAuthority) previous, userInfo, host, null);
         }
 
         public HostBasedAuthority port(String port) {
-            assert port == null : "shouldn't change port";
+            assert this.port == null : "shouldn't change port";
             return new HostBasedAuthority((NonAuthority) previous, userInfo, host, port);
         }
 

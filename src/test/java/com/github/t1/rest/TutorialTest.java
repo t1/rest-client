@@ -6,8 +6,6 @@ import org.junit.*;
 
 import lombok.*;
 
-// FIXME
-@Ignore("needs rework on the RestClientMockRule")
 public class TutorialTest {
     @Rule
     public final RestClientMockRule service = new RestClientMockRule();
@@ -19,21 +17,28 @@ public class TutorialTest {
         String key, value;
     }
 
-    @Before
-    public void before() {
-        service.on("http://example.org/path").reply("value");
-        service.on("http://example.org/pojo").reply(new Pojo("k", "v"));
-    }
-
     @Test
     public void testGetString() {
-        String value = new RestResource("http://example.org/path").get(String.class);
+        service.on("http://example.org/string").reply("value");
+
+        String value = new RestResource("http://example.org/string").get(String.class);
 
         assertEquals("value", value);
     }
 
     @Test
+    public void testGetInt() {
+        service.on("http://example.org/int").reply(123);
+
+        int value = new RestResource("http://example.org/int").get(int.class);
+
+        assertEquals(123, value);
+    }
+
+    @Test
     public void testGetPojo() {
+        service.on("http://example.org/pojo").reply(new Pojo("k", "v"));
+
         Pojo value = new RestResource("http://example.org/pojo").get(Pojo.class);
 
         assertEquals("k", value.getKey());

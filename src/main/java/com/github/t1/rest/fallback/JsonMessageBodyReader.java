@@ -18,7 +18,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Alternative
 @Consumes(APPLICATION_JSON)
 public class JsonMessageBodyReader implements MessageBodyReader<Object> {
-    private final ObjectMapper mapper = new ObjectMapper() //
+    public static final ObjectMapper MAPPER = new ObjectMapper() //
             .setSerializationInclusion(NON_EMPTY).configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
@@ -29,6 +29,6 @@ public class JsonMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
-        return mapper.readValue(entityStream, type);
+        return MAPPER.readValue(entityStream, type);
     }
 }

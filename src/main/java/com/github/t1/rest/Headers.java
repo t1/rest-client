@@ -72,7 +72,8 @@ public class Headers implements Iterable<Header> {
         this.tail = tail;
         if (head != null)
             checkForDuplicates(head.name());
-        assert tail != null : "a null-header should have no tail";
+        else
+            assert tail == null : "a null-header should have no tail";
     }
 
     private void checkForDuplicates(String name) {

@@ -13,7 +13,7 @@ public class ConverterTools {
     }
 
     public static String readString(InputStream in, MediaType mediaType) {
-        return readFromAsString(new InputStreamReader(in, getCharset(mediaType)));
+        return readStringFrom(new InputStreamReader(in, getCharset(mediaType)));
     }
 
     public static Charset getCharset(MediaType mediaType) {
@@ -24,7 +24,7 @@ public class ConverterTools {
     }
 
     @SneakyThrows(IOException.class)
-    public static String readFromAsString(Reader reader) {
+    public static String readStringFrom(Reader reader) {
         StringBuilder out = new StringBuilder();
         char[] buffer = new char[8 * 1024];
         while (true) {

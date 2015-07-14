@@ -27,8 +27,8 @@ class GetRequest<T> extends HttpRequest {
     }
 
     @Override
-    @SneakyThrows(IOException.class)
     @SuppressWarnings("resource")
+    @SneakyThrows(IOException.class)
     protected EntityResponse<T> convert(CloseableHttpResponse apacheResponse) {
         Headers responseHeaders = convert(apacheResponse.getAllHeaders());
         StatusType status = status(apacheResponse);
