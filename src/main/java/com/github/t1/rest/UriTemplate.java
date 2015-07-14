@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.MethodExtensions.*;
 import static java.util.Arrays.*;
 import static lombok.AccessLevel.*;
 
@@ -7,19 +8,22 @@ import java.net.URI;
 import java.util.List;
 import java.util.regex.*;
 
+import com.github.t1.rest.UriAuthority.HostBasedAuthority;
+
 import lombok.*;
 import lombok.experimental.ExtensionMethod;
-
-import com.github.t1.rest.UriAuthority.HostBasedAuthority;
-import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
 
 /** Immutable, fluent, strictly appendable builder for URI templates. */
 @EqualsAndHashCode
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 public abstract class UriTemplate {
-    private static final Pattern URI_PATTERN = Pattern
-            .compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
+    private static final Pattern URI_PATTERN =
+            Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
+
+    public static UriTemplate from(URI uri) {
+        return fromString(uri.toString());
+    }
 
     public static UriTemplate fromString(String uri) {
         Matcher matcher = URI_PATTERN.matcher(uri);
@@ -37,7 +41,7 @@ public abstract class UriTemplate {
     private static List<String> split(String path) {
         List<String> list = asList(path.split("/"));
         if (path.endsWith("/"))
-            list = list.with("");
+            list = MethodExtensions.with(list, "");
         return list;
     }
 
@@ -58,8 +62,8 @@ public abstract class UriTemplate {
             this.scheme = scheme;
         }
 
-        public NonFragment schemeSpecificPart(String schemeSpecificPart) {
-            if (schemeSpecificPart == null || schemeSpecificPart.isEmpty())
+        protected NonFragment schemeSpecificPart(String schemeSpecificPart) {
+            if (schemeSpecificPart.isEmpty())
                 return this;
             if (schemeSpecificPart.startsWith("//"))
                 return authorityAndMore(schemeSpecificPart.substring(2));
@@ -78,7 +82,7 @@ public abstract class UriTemplate {
 
         @Override
         public UriScheme with(String name, Object value) {
-            return new UriScheme(scheme.replaceVariable(name, value));
+            return new UriScheme(replaceVariable(scheme, name, value));
         }
     }
 
@@ -95,20 +99,12 @@ public abstract class UriTemplate {
             return scheme().authority(authority);
         }
 
-        public UriTemplate authorityAndMore(String authority) {
-            return scheme().authorityAndMore(authority);
-        }
-
-        public HostBasedAuthorityBuilder userInfo(String userInfo) {
+        public HostBasedAuthority userInfo(String userInfo) {
             return scheme().userInfo(userInfo);
         }
 
-        public HostBasedAuthorityBuilder host(String host) {
+        public HostBasedAuthority host(String host) {
             return scheme().host(host);
-        }
-
-        public NonFragment pathAndMore(String path) {
-            return scheme().pathAndMore(path);
         }
 
         public UriPath absolutePath(String path) {
@@ -129,15 +125,15 @@ public abstract class UriTemplate {
             return UriAuthority.authority(this, authority);
         }
 
-        public NonFragment authorityAndMore(String authorityAndMore) {
+        protected NonFragment authorityAndMore(String authorityAndMore) {
             return UriAuthority.authorityAndMore(this, authorityAndMore);
         }
 
-        public HostBasedAuthorityBuilder userInfo(String userInfo) {
-            return HostBasedAuthority.builder().scheme(this).userInfo(userInfo);
+        public HostBasedAuthority userInfo(String userInfo) {
+            return new HostBasedAuthority(this, userInfo);
         }
 
-        public HostBasedAuthorityBuilder host(String host) {
+        public HostBasedAuthority host(String host) {
             return userInfo(null).host(host);
         }
     }
@@ -147,29 +143,27 @@ public abstract class UriTemplate {
             super(previous);
         }
 
-        public NonFragment pathAndMore(String path) {
+        protected NonFragment pathAndMore(String path) {
             if (path == null)
                 return this;
             String[] split = path.split("\\?", 2);
-            NonQuery nonQuery = path(split[0]);
+            NonQuery nonQuery = parsePath(split[0]);
             if (split.length == 2)
                 return nonQuery.queryAndMore(split[1]);
             return nonQuery;
         }
 
-        public NonQuery path(String path) {
-            if (path == null)
-                return this;
+        protected NonQuery parsePath(String path) {
             boolean isAbsolute = path.startsWith("/");
             if (isAbsolute)
                 path = path.substring(1);
             List<String> split = split(path);
-            UriPath result;
-            if (isAbsolute)
-                result = absolutePath(split.head());
-            else
-                result = relativePath(split.head());
-            return result.path(split.tail());
+            String head = head(split);
+            String[] headAndMatrix = head.split(";", 2);
+            UriPath result = isAbsolute ? absolutePath(headAndMatrix[0]) : relativePath(headAndMatrix[0]);
+            if (headAndMatrix.length > 1)
+                result = result.parseMatrix(headAndMatrix[1]);
+            return result.path(tail(split));
         }
 
         public UriPath absolutePath(String path) {
@@ -194,14 +188,25 @@ public abstract class UriTemplate {
             return path;
         }
 
-        public UriPath path(String path) {
+        public UriPath parsePath(String path) {
             return path(split(path));
         }
 
-        public UriPath path(List<String> path) {
+        protected UriPath path(List<String> path) {
             if (path.isEmpty())
                 return this;
-            return new PathElement(this, path.head()).path(path.tail());
+            String head = head(path);
+            String[] headAndMatrix = head.split(";", 2);
+            UriPath result = new PathElement(this, headAndMatrix[0]);
+            if (headAndMatrix.length > 1)
+                result = result.parseMatrix(headAndMatrix[1]);
+            return result.path(tail(path));
+        }
+
+        protected UriPath parseMatrix(String string) {
+            String[] split = string.split("=", 2);
+            String value = (split.length == 1) ? null : split[1];
+            return matrix(split[0], value);
         }
 
         public UriPath matrix(String key, String value) {
@@ -229,7 +234,7 @@ public abstract class UriTemplate {
 
         @Override
         public RelativePath with(String name, Object value) {
-            return new RelativePath((NonPath) previous.with(name, value), path.replaceVariable(name, value));
+            return new RelativePath((NonPath) previous.with(name, value), replaceVariable(path, name, value));
         }
     }
 
@@ -254,7 +259,7 @@ public abstract class UriTemplate {
 
         @Override
         public AbsolutePath with(String name, Object value) {
-            return new AbsolutePath((NonPath) previous.with(name, value), path.replaceVariable(name, value));
+            return new AbsolutePath((NonPath) previous.with(name, value), replaceVariable(path, name, value));
         }
     }
 
@@ -279,7 +284,7 @@ public abstract class UriTemplate {
 
         @Override
         public PathElement with(String name, Object value) {
-            return new PathElement((UriPath) previous.with(name, value), path.replaceVariable(name, value));
+            return new PathElement((UriPath) previous.with(name, value), replaceVariable(path, name, value));
         }
     }
 
@@ -291,24 +296,24 @@ public abstract class UriTemplate {
         private MatrixPath(UriPath previous, String key, String value) {
             super(previous);
             this.key = check(key);
-            this.value = check(value);
+            this.value = (value == null) ? null : check(value);
         }
 
         @Override
         public String toString() {
-            return previous + ";" + key + "=" + value;
+            return previous + ";" + key + ((value == null) ? "" : ("=" + value));
         }
 
         @Override
         public String get() {
-            return previous + ";" + key + "=" + value;
+            return previous.get() + ";" + key + ((value == null) ? "" : ("=" + value));
         }
 
         @Override
         public MatrixPath with(String name, Object value) {
             return new MatrixPath((UriPath) previous.with(name, value), //
-                    this.key.replaceVariable(name, value), //
-                    this.value.replaceVariable(name, value));
+                    replaceVariable(this.key, name, value), //
+                    replaceVariable(this.value, name, value));
         }
     }
 
@@ -317,11 +322,9 @@ public abstract class UriTemplate {
             super(previous);
         }
 
-        public NonFragment queryAndMore(String string) {
-            if (string.isEmpty())
-                return this;
+        protected NonFragment queryAndMore(String string) {
             List<String> split = asList(string.split("&"));
-            return query(split.head()).query(split.tail());
+            return query(head(split)).query(tail(split));
         }
 
         public Query query(String keyValue) {
@@ -360,7 +363,7 @@ public abstract class UriTemplate {
         public NonFragment query(List<String> list) {
             if (list.isEmpty())
                 return this;
-            return query(list.head()).query(list.tail());
+            return query(head(list)).query(tail(list));
         }
 
         public Query query(String keyValue) {
@@ -378,7 +381,7 @@ public abstract class UriTemplate {
 
         @Override
         public String toString() {
-            return previous + ((key == null) ? "" : (first() ? "?" : "&") + key + "=" + value);
+            return previous + (first() ? "?" : "&") + key + "=" + value;
         }
 
         @Override
@@ -389,8 +392,8 @@ public abstract class UriTemplate {
         @Override
         public Query with(String name, Object value) {
             return new Query(previous.with(name, value), //
-                    this.key.replaceVariable(name, value), //
-                    this.value.replaceVariable(name, value));
+                    replaceVariable(this.key, name, value), //
+                    replaceVariable(this.value, name, value));
         }
     }
 
@@ -431,14 +434,14 @@ public abstract class UriTemplate {
 
         @Override
         public Fragment with(String name, Object value) {
-            return new Fragment(previous.with(name, value), fragment.replaceVariable(name, value));
+            return new Fragment(previous.with(name, value), replaceVariable(fragment, name, value));
         }
     }
 
     protected final UriTemplate previous;
 
     public boolean isOpaque() {
-        return isAbsolute() && (schemeSpecificPart() == null || !schemeSpecificPart().startsWith("/"));
+        return isAbsolute() && (schemeSpecificPart().isEmpty() || !schemeSpecificPart().startsWith("/"));
     }
 
     public boolean isHierarchical() {
@@ -466,7 +469,7 @@ public abstract class UriTemplate {
         return (part == null) ? null : part.get();
     }
 
-    private <T extends UriTemplate> T findPart(Class<T> type) {
+    public <T extends UriTemplate> T findPart(Class<T> type) {
         for (UriTemplate part = this; part != null; part = part.previous)
             if (type.isInstance(part))
                 return type.cast(part);
@@ -502,7 +505,7 @@ public abstract class UriTemplate {
     }
 
     public String path() {
-        return isOpaque() ? null : findPartString(UriPath.class).or("");
+        return isOpaque() ? null : or(findPartString(UriPath.class), "");
     }
 
     public String query() {
@@ -516,7 +519,7 @@ public abstract class UriTemplate {
     public abstract UriTemplate with(String name, Object value);
 
     public List<String> variables() {
-        return toString().variables();
+        return MethodExtensions.variables(toString());
     }
 
     /** the string version of this part; for the complete uri, call {@link #toString()} or {@link #toUri()}. */

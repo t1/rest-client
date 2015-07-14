@@ -10,6 +10,7 @@ import lombok.*;
  * A {@link RestResource} plus headers to be sent. May be typed (see {@link EntityRequest}).
  */
 @Getter
+@EqualsAndHashCode
 public class RestRequest {
     @NonNull
     RestResource resource;
@@ -29,6 +30,10 @@ public class RestRequest {
         return resource.authority();
     }
 
+    public RestConfig config() {
+        return resource.config();
+    }
+
     public URI uri() {
         return resource.uri().toUri();
     }
@@ -38,11 +43,12 @@ public class RestRequest {
     }
 
     public <T> EntityRequest<T> accept(Class<T> acceptedType) {
-        return EntityRequest.of(resource, acceptedType, headers);
+        return entityRequest(resource.config().converterFor(acceptedType));
     }
 
-    public EntityRequest<?> accept(Class<?> first, Class<?>... more) {
-        return EntityRequest.of(resource, headers, first, more);
+    @SuppressWarnings("unchecked")
+    public <T> EntityRequest<T> accept(Class<?> first, Class<?>... more) {
+        return (EntityRequest<T>) entityRequest(resource.config().converterFor(first, more));
     }
 
     /**
@@ -52,7 +58,11 @@ public class RestRequest {
      */
     @Deprecated
     public <T> EntityRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
-        return EntityRequest.of(resource, acceptedType, contentType, headers);
+        return entityRequest(resource.config().converterFor(acceptedType, contentType));
+    }
+
+    private <T> EntityRequest<T> entityRequest(ResponseConverter<T> converter) {
+        return new EntityRequest<>(resource, headers.accept(converter.mediaTypes()), converter);
     }
 
     public RestRequest basicAuth(String userName, String password) {

@@ -1,23 +1,24 @@
 package com.github.t1.rest;
 
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.StatusType;
 
-import lombok.*;
-
 import com.github.t1.rest.Headers.Header;
+
+import lombok.*;
 
 @Data
 @RequiredArgsConstructor
 public abstract class RestResponse {
+    private final RestConfig config;
     private final StatusType status;
     private final Headers headers;
 
     public RestResponse expecting(StatusType... expectedTypes) {
         for (StatusType expectedType : expectedTypes)
-            if (status.getStatusCode() != expectedType.getStatusCode())
-                throw new UnexpectedStatusException(status, expectedTypes);
-        return this;
+            if (status.getStatusCode() == expectedType.getStatusCode())
+                return this;
+        throw new UnexpectedStatusException(status, expectedTypes);
     }
 
     public Header header(String name) {

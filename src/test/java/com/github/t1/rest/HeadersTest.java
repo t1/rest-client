@@ -1,5 +1,7 @@
 package com.github.t1.rest;
 
+import static java.util.Arrays.*;
+import static javax.ws.rs.core.MediaType.*;
 import static org.junit.Assert.*;
 
 import java.util.*;
@@ -41,6 +43,15 @@ public class HeadersTest {
         assertFalse(headers.iterator().hasNext());
         assertEquals("", headers.toString());
         assertFalse(headers.contains("Key"));
+        assertTrue(headers.isEmpty());
+    }
+
+    @Test
+    public void shouldEqualEmptyHeaders() {
+        Headers headers1 = new Headers();
+        Headers headers2 = new Headers();
+
+        assertEquals(headers2, headers1);
     }
 
     @Test
@@ -57,6 +68,31 @@ public class HeadersTest {
         assertEquals("true", headers.get("Key"));
         assertEquals("true", headers.get("key"));
         assertTrue(headers.contains("Key"));
+        assertFalse(headers.isEmpty());
+    }
+
+    @Test
+    public void shouldEqualSingleHeaders() {
+        Headers headers1 = new Headers().header("Key", true);
+        Headers headers2 = new Headers().header("Key", true);
+
+        assertEquals(headers2, headers1);
+    }
+
+    @Test
+    public void shouldNotEqualSingleHeadersDifferentKey() {
+        Headers headers1 = new Headers().header("Key1", true);
+        Headers headers2 = new Headers().header("Key2", true);
+
+        assertNotEquals(headers2, headers1);
+    }
+
+    @Test
+    public void shouldNotEqualSingleHeadersDifferentValue() {
+        Headers headers1 = new Headers().header("Key", true);
+        Headers headers2 = new Headers().header("Key", false);
+
+        assertNotEquals(headers2, headers1);
     }
 
     @Test
@@ -124,7 +160,7 @@ public class HeadersTest {
     }
 
     @Test
-    @Ignore
+    @Ignore("maybe we shouldn't fail on duplicates but append... maybe for some headers only")
     public void shouldCollectHeaders() {
         Headers headers = new Headers().header("Key", 1).header("Key", 2);
 
@@ -154,6 +190,16 @@ public class HeadersTest {
         assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", headers.toString());
 
         assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.get("Accept"));
+        assertEquals(
+                asList( //
+                        MediaType.valueOf("application/json;q=1.0"), //
+                        MediaType.valueOf("text/html;charset=utf-8")), //
+                headers.accept());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToAddEmptyAcceptHeader() {
+        new Headers().accept(Collections.<MediaType> emptyList());
     }
 
     @Test
@@ -171,8 +217,41 @@ public class HeadersTest {
         assertEquals("text/html;charset=utf-8", headers.get("Content-Type"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldFailToAddEmptyAcceptHeader() {
-        new Headers().accept(Collections.<MediaType> emptyList());
+    @Test
+    public void shouldGetWildCardContentTypeHeader() {
+        Headers headers = new Headers();
+
+        assertEquals(WILDCARD_TYPE, headers.contentType());
+    }
+
+    @Test
+    public void shouldStripStrangeQuantityAndTemplateContentTypeHeader() {
+        Headers headers = new Headers().header("Content-Type", "{*/*, q=1000}");
+
+        assertEquals(WILDCARD_TYPE, headers.contentType());
+    }
+
+    @Test
+    public void shouldAddContentLength() {
+        Headers headers = new Headers().contentLength(123);
+
+        assertEquals((Integer) 123, headers.contentLength());
+    }
+
+    @Test
+    public void shouldGetNullContentLength() {
+        Headers headers = new Headers();
+
+        assertNull(headers.contentLength());
+    }
+
+    @Test
+    public void shouldReplaceHeaderVariable() {
+        Headers headers = new Headers().header("foo", "{bar}");
+
+        Headers resolved = headers.with("bar", "foobar");
+
+        assertEquals("foo: {bar}", headers.toString());
+        assertEquals("foo: foobar", resolved.toString());
     }
 }

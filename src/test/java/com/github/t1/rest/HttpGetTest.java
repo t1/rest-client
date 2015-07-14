@@ -6,27 +6,28 @@ import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static java.util.Arrays.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.Family.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
 
 import java.io.InputStream;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import lombok.*;
 
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.*;
-
 import com.github.t1.rest.fallback.ConverterTools;
+
+import ch.qos.logback.classic.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.*;
 
 @RunWith(CdiRunner.class)
 public class HttpGetTest {
@@ -160,23 +161,37 @@ public class HttpGetTest {
         public Response noContent() {
             return Response.status(NO_CONTENT).build();
         }
+
+        @GET
+        @Path("/zombie-apocalypse")
+        public Response zombieAcopalypse() {
+            return Response.status(799).build(); // TODO get real code for zombie apocalypse
+        }
     }
 
     @ClassRule
-    public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
-            new YamlMessageBodyWriter());
+    public static final DropwizardClientRule service =
+            new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
+
+    @javax.enterprise.inject.Produces
+    ResourceFactory resourceFactory = new ResourceFactory() {
+        @Override
+        public RestResource forName(String name) {
+            return ("test".equals(name)) ? new RestResource(service.baseUri()) : null;
+        }
+    };
 
     @Inject
     RestConfig rest = new RestConfig();
-
-    private RestResource base() {
-        return new RestResource(service.baseUri());
-    }
 
     @Before
     public void before() {
         setLogLevel("org.apache.http.wire", DEBUG);
         setLogLevel("com.github.t1.rest", DEBUG);
+    }
+
+    private RestResource base() {
+        return rest.resource("test");
     }
 
     private void setLogLevel(String loggerName, Level level) {
@@ -213,6 +228,7 @@ public class HttpGetTest {
         EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
 
         assertEquals("pong", response.get());
+        assertEquals("1.1 localhost (Apache-HttpClient/4.5 (cache))", response.header("Via").value());
         assertEquals(TEXT_PLAIN_TYPE, response.contentType());
         assertEquals((Integer) 4, response.contentLength());
     }
@@ -240,9 +256,9 @@ public class HttpGetTest {
 
     @Test
     public void shouldAcceptType() {
-        EntityRequest<Pojo> rest = base().accept(Pojo.class);
+        EntityRequest<Pojo> request = base().accept(Pojo.class);
 
-        assertEquals(Pojo.class, rest.converter().acceptedType());
+        assertEquals(Pojo.class, request.acceptedType());
     }
 
     @Test
@@ -375,20 +391,20 @@ public class HttpGetTest {
                 .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
 
         EntityResponse<?> barResponse = request.with("path", "barpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json", barResponse.contentType()
-                .toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
+                barResponse.contentType().toString());
         BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
         EntityResponse<?> bazResponse = request.with("path", "bazpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json", bazResponse.contentType()
-                .toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json",
+                bazResponse.contentType().toString());
         BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
         EntityResponse<?> bongResponse = request.with("path", "bongpojo").getResponse();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json", bongResponse
-                .contentType().toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json",
+                bongResponse.contentType().toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
     }
@@ -402,6 +418,21 @@ public class HttpGetTest {
     }
 
     @Test
+    public void shouldDeriveTwoResorucesWithHeaders() {
+        EntityRequest<Pojo> base = base().path("authorized-pojo").accept(Pojo.class);
+        EntityRequest<Pojo> bar = base.header("foo", "bar");
+        EntityRequest<Pojo> baz = base.header("foo", "{foobar}").with("foobar", "baz");
+
+        assertEquals(null, base.headers().get("foo"));
+        assertEquals("bar", bar.headers().get("foo"));
+        assertEquals("baz", baz.headers().get("foo"));
+        assertNotEquals(bar, baz);
+
+        assertEquals(bar, base.header("foo", "bar"));
+        assertEquals(base().authority(), base.authority());
+    }
+
+    @Test
     public void shouldExpectOk() {
         try {
             base().path("no-content").get(String.class);
@@ -411,6 +442,35 @@ public class HttpGetTest {
             assertEquals(asList(OK), e.expected());
             assertEquals("expected status 200 OK but got 204 No Content", e.getMessage());
         }
+    }
+
+    @Test
+    public void shouldCheckExpectedStatus() {
+        EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+
+        response.expecting(NO_CONTENT, OK);
+    }
+
+    @Test
+    public void shouldFailToCheckUnexpectedStatus() {
+        try {
+            EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+
+            response.expecting(BAD_REQUEST, NOT_ACCEPTABLE);
+            fail("expected UnexpectedStatusException");
+        } catch (UnexpectedStatusException e) {
+            assertEquals(OK, e.actual());
+            assertEquals(asList(BAD_REQUEST, NOT_ACCEPTABLE), e.expected());
+        }
+    }
+
+    @Test
+    public void shouldHandleUnknownResponseCode() {
+        StatusType status = base().path("zombie-apocalypse").getResponse().status();
+
+        assertEquals(799, status.getStatusCode());
+        assertEquals("Unknown", status.getReasonPhrase());
+        assertEquals(OTHER, status.getFamily());
     }
 
     // TODO check all types that are not convertible (according to spec) see ConverterTools

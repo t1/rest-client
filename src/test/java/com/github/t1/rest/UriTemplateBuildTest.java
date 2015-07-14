@@ -3,12 +3,11 @@ package com.github.t1.rest;
 import static com.github.t1.rest.UriTemplate.CommonScheme.*;
 import static org.junit.Assert.*;
 
+import java.net.URI;
+
 import org.junit.Test;
 
-import com.github.t1.rest.UriAuthority.HostBasedAuthority.HostBasedAuthorityBuilder;
-import com.github.t1.rest.UriTemplate.Query;
-import com.github.t1.rest.UriTemplate.UriPath;
-import com.github.t1.rest.UriTemplate.UriScheme;
+import com.github.t1.rest.UriTemplate.*;
 
 public class UriTemplateBuildTest {
     @Test
@@ -17,6 +16,7 @@ public class UriTemplateBuildTest {
                 UriScheme.of("s").userInfo("u").host("h").port("po").absolutePath("pa").query("q", "v").fragment("f");
 
         assertEquals("s://u@h:po/pa?q=v#f", uri.toString());
+        assertEquals("f", uri.get());
     }
 
     @Test
@@ -25,48 +25,119 @@ public class UriTemplateBuildTest {
                 .query("{q}", "{v}").fragment("{f}");
 
         assertEquals("{s}://{u}@{h}:{po}/{pa}?{q}={v}#{f}", uri.toString());
+        assertEquals("{f}", uri.get());
     }
 
     @Test
-    public void shouldBuildFromScheme() {
-        UriTemplate uri = https.userInfo("u").host("h").port("po").absolutePath("pa");
+    public void shouldBuildScheme() {
+        UriTemplate uri = UriScheme.of("s");
 
-        assertEquals("https://u@h:po/pa", uri.toString());
+        assertEquals("s:", uri.toString());
+        assertEquals("s", uri.get());
     }
 
     @Test
-    public void shouldBuildHostFromScheme() {
-        UriTemplate uri = https.host("h").port("po").absolutePath("pa");
+    public void shouldBuildSchemeFromUri() {
+        UriTemplate uri = UriScheme.of(URI.create("http://example.org"));
 
-        assertEquals("https://h:po/pa", uri.toString());
+        assertEquals("http:", uri.toString());
+        assertEquals("http", uri.get());
     }
 
     @Test
-    public void shouldBuildWithoutUserInfo() {
-        UriTemplate uri = UriScheme.of("http").host("example.org").port("8080").absolutePath("path");
+    public void shouldBuildHttp() {
+        UriTemplate uri = http.scheme();
 
-        assertEquals("http://example.org:8080/path", uri.toString());
+        assertEquals("http:", uri.toString());
+        assertEquals("http", uri.get());
     }
 
     @Test
-    public void shouldBuildWithoutPort() {
-        UriTemplate uri = http.host("example.org").absolutePath("path");
+    public void shouldBuildHttps() {
+        UriTemplate uri = https.scheme();
 
-        assertEquals("http://example.org/path", uri.toString());
+        assertEquals("https:", uri.toString());
+        assertEquals("https", uri.get());
     }
 
     @Test
-    public void shouldBuildWithAuthority() {
-        UriTemplate uri = UriScheme.of("s").authority("u@h:po").absolutePath("pa");
+    public void shouldBuildHostBasedAuthority() {
+        UriTemplate uri = https.userInfo("u").host("h").port("po");
 
-        assertEquals("s://u@h:po/pa", uri.toString());
+        assertEquals("https://u@h:po", uri.toString());
+        assertEquals("u@h:po", uri.get());
+    }
+
+    @Test
+    public void shouldBuildHostAndPort() {
+        UriTemplate uri = http.host("example.org").port("8080");
+
+        assertEquals("http://example.org:8080", uri.toString());
+        assertEquals("example.org:8080", uri.get());
+    }
+
+    @Test
+    public void shouldBuildHost() {
+        UriTemplate uri = http.host("example.org");
+
+        assertEquals("http://example.org", uri.toString());
+        assertEquals("example.org", uri.get());
+    }
+
+    @Test
+    public void shouldBuildAuthority() {
+        UriTemplate uri = http.authority("u@h:1");
+
+        assertEquals("http://u@h:1", uri.toString());
+        assertEquals("u@h:1", uri.authority());
+        assertEquals("u", uri.userInfo());
+        assertEquals("h", uri.host());
+        assertEquals("1", uri.port());
+        assertEquals("u@h:1", uri.get());
+    }
+
+    @Test
+    public void shouldBuildWithAuthorityUserVariable() {
+        UriTemplate uri = http.authority("{u}@h:1");
+
+        assertEquals("http://{u}@h:1", uri.toString());
+        assertEquals("{u}@h:1", uri.authority());
+        assertEquals("{u}", uri.userInfo());
+        assertEquals("h", uri.host());
+        assertEquals("1", uri.port());
+        assertEquals("{u}@h:1", uri.get());
+    }
+
+    @Test
+    public void shouldBuildWithAuthorityHostVariable() {
+        UriTemplate uri = http.authority("u@{h}:1");
+
+        assertEquals("http://u@{h}:1", uri.toString());
+        assertEquals("u@{h}:1", uri.authority());
+        assertEquals("u", uri.userInfo());
+        assertEquals("{h}", uri.host());
+        assertEquals("1", uri.port());
+        assertEquals("u@{h}:1", uri.get());
+    }
+
+    @Test
+    public void shouldBuildWithAuthorityPortVariable() {
+        UriTemplate uri = http.authority("u@h:{po}");
+
+        assertEquals("http://u@h:{po}", uri.toString());
+        assertEquals("u@h:{po}", uri.authority());
+        assertEquals("u", uri.userInfo());
+        assertEquals("h", uri.host());
+        assertEquals("{po}", uri.port());
+        assertEquals("u@h:{po}", uri.get());
     }
 
     @Test
     public void shouldBuildWithRegistryAuthority() {
-        UriTemplate uri = UriScheme.of("s").authority("räg").absolutePath("pa");
+        UriTemplate uri = http.authority("räg");
 
-        assertEquals("s://räg/pa", uri.toString());
+        assertEquals("http://räg", uri.toString());
+        assertEquals("räg", uri.get());
     }
 
     @Test
@@ -74,13 +145,7 @@ public class UriTemplateBuildTest {
         UriTemplate uri = file.authority("").absolutePath("path");
 
         assertEquals("file:///path", uri.toString());
-    }
-
-    @Test
-    public void shouldBuildHttps() {
-        HostBasedAuthorityBuilder uri = https.host("example.org");
-
-        assertEquals("https://example.org", uri.toString());
+        assertEquals("/path", uri.get());
     }
 
     @Test
@@ -88,6 +153,7 @@ public class UriTemplateBuildTest {
         UriTemplate uri = file.absolutePath("path");
 
         assertEquals("file:/path", uri.toString());
+        assertEquals("/path", uri.get());
     }
 
     @Test
@@ -95,6 +161,7 @@ public class UriTemplateBuildTest {
         UriTemplate uri = file.host("").absolutePath("path");
 
         assertEquals("file:///path", uri.toString());
+        assertEquals("/path", uri.get());
     }
 
     @Test
@@ -102,13 +169,20 @@ public class UriTemplateBuildTest {
         UriTemplate uri = file.relativePath("path");
 
         assertEquals("file:path", uri.toString());
+        assertEquals("path", uri.get());
     }
 
     @Test
     public void shouldBuildRelativeFilePathWithTwoElements() {
-        UriTemplate uri = file.relativePath("path").path("two");
+        UriTemplate uri = file.relativePath("path").parsePath("two");
 
         assertEquals("file:path/two", uri.toString());
+        assertEquals("path/two", uri.get());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldFailToBuildRelativePathNull() {
+        file.relativePath((String) null);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -118,23 +192,26 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithPath() {
-        UriPath path = http.absolutePath("path");
+        UriTemplate uri = http.absolutePath("path");
 
-        assertEquals("http:/path", path.toString());
+        assertEquals("http:/path", uri.toString());
+        assertEquals("/path", uri.get());
     }
 
     @Test
     public void shouldBuildWithTwoPaths() {
-        UriPath path = http.absolutePath("path1").path("path2");
+        UriTemplate uri = http.absolutePath("path1").parsePath("path2");
 
-        assertEquals("http:/path1/path2", path.toString());
+        assertEquals("http:/path1/path2", uri.toString());
+        assertEquals("/path1/path2", uri.get());
     }
 
     @Test
     public void shouldBuildWithThreePaths() {
-        UriPath path = http.absolutePath("path1").path("path2").path("path3");
+        UriTemplate uri = http.absolutePath("path1").parsePath("path2").parsePath("path3");
 
-        assertEquals("http:/path1/path2/path3", path.toString());
+        assertEquals("http:/path1/path2/path3", uri.toString());
+        assertEquals("/path1/path2/path3", uri.get());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -142,23 +219,29 @@ public class UriTemplateBuildTest {
         file.absolutePath("path/with/slashes");
     }
 
+    // TODO shouldn't this fail as well?
     @Test
     public void shouldBuildPathElementContainingSlashes() {
-        UriPath path = file.absolutePath("path").path("with/slashes");
+        UriPath path = file.absolutePath("path").parsePath("with/slashes");
 
         assertEquals("file:/path/with/slashes", path.toString());
     }
 
     @Test
-    public void shouldDeriveThreePaths() {
+    public void shouldDeriveMultiplePathsFromOneRoot() {
         UriPath root = http.absolutePath("p");
-        UriPath p1 = root.path("1");
-        UriPath p2 = root.path("2");
-        UriPath p3 = root.path("3").path("4");
+        UriPath p1 = root.parsePath("1");
+        UriPath p2 = root.parsePath("2");
+        UriPath p3 = root.parsePath("3").parsePath("4");
 
         assertEquals("http:/p/1", p1.toString());
         assertEquals("http:/p/2", p2.toString());
         assertEquals("http:/p/3/4", p3.toString());
+
+        assertEquals("/p", root.get());
+        assertEquals("/p/1", p1.get());
+        assertEquals("/p/2", p2.get());
+        assertEquals("/p/3/4", p3.get());
     }
 
     @Test
@@ -166,6 +249,7 @@ public class UriTemplateBuildTest {
         UriPath path = http.absolutePath("path").matrix("key", "value");
 
         assertEquals("http:/path;key=value", path.toString());
+        assertEquals("/path;key=value", path.get());
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -183,13 +267,15 @@ public class UriTemplateBuildTest {
         UriPath path = http.absolutePath("path").matrix("key1", "value1").matrix("key2", "value2");
 
         assertEquals("http:/path;key1=value1;key2=value2", path.toString());
+        assertEquals("/path;key1=value1;key2=value2", path.get());
     }
 
     @Test
     public void shouldBuildWithPathMatrixPath() {
-        UriPath path = http.absolutePath("path").matrix("key", "value").path("path2");
+        UriPath path = http.absolutePath("path").matrix("key", "value").parsePath("path2");
 
         assertEquals("http:/path;key=value/path2", path.toString());
+        assertEquals("/path;key=value/path2", path.get());
     }
 
     @Test
@@ -197,6 +283,7 @@ public class UriTemplateBuildTest {
         Query query = http.absolutePath("path").query("key", "value");
 
         assertEquals("http:/path?key=value", query.toString());
+        assertEquals("key=value", query.get());
     }
 
     @Test
@@ -204,6 +291,7 @@ public class UriTemplateBuildTest {
         Query query = http.absolutePath("path").query("key1", "value1").query("key2", "value2");
 
         assertEquals("http:/path?key1=value1&key2=value2", query.toString());
+        assertEquals("key1=value1&key2=value2", query.get());
     }
 
     @Test
@@ -211,6 +299,7 @@ public class UriTemplateBuildTest {
         Query query = http.absolutePath("path").query("key1", "value1").query("key2", "value2").query("key3", "value3");
 
         assertEquals("http:/path?key1=value1&key2=value2&key3=value3", query.toString());
+        assertEquals("key1=value1&key2=value2&key3=value3", query.get());
     }
 
     @Test
@@ -218,10 +307,11 @@ public class UriTemplateBuildTest {
         UriTemplate uri = http.absolutePath("path").fragment("frag");
 
         assertEquals("http:/path#frag", uri.toString());
+        assertEquals("frag", uri.get());
     }
 
     @Test
     public void shouldNotCompileWithTwoFragments() {
-        // http.path("path").fragment("frag1").fragment("frag2");
+        // http.absolutePath("path").fragment("frag1").fragment("frag2");
     }
 }

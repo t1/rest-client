@@ -5,16 +5,18 @@ import java.net.URI;
 
 import javax.ws.rs.core.Response.StatusType;
 
-import lombok.SneakyThrows;
-
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.*;
+import org.apache.http.impl.client.CloseableHttpClient;
 
-public class GetRequest<T> extends HttpRequest {
+import lombok.SneakyThrows;
+
+class GetRequest<T> extends HttpRequest {
     private final ResponseConverter<T> converter;
 
-    public GetRequest(URI uri, Headers requestHeaders, ResponseConverter<T> converter) {
-        super(new HttpGet(uri), requestHeaders);
+    public GetRequest(RestConfig config, CloseableHttpClient apacheClient, URI uri, Headers requestHeaders,
+            ResponseConverter<T> converter) {
+        super(config, apacheClient, new HttpGet(uri), requestHeaders);
         this.converter = converter;
     }
 
@@ -26,11 +28,12 @@ public class GetRequest<T> extends HttpRequest {
 
     @Override
     @SneakyThrows(IOException.class)
+    @SuppressWarnings("resource")
     protected EntityResponse<T> convert(CloseableHttpResponse apacheResponse) {
         Headers responseHeaders = convert(apacheResponse.getAllHeaders());
         StatusType status = status(apacheResponse);
         HttpEntity entity = apacheResponse.getEntity();
         InputStream responseStream = (entity == null) ? null : entity.getContent();
-        return new EntityResponse<>(status, responseHeaders, converter, responseStream);
+        return new EntityResponse<>(config(), status, responseHeaders, converter, responseStream);
     }
 }

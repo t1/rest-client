@@ -1,9 +1,10 @@
 package com.github.t1.rest;
 
 import static org.junit.Assert.*;
-import lombok.Data;
 
 import org.junit.*;
+
+import lombok.*;
 
 // FIXME
 @Ignore("needs rework on the RestClientMockRule")
@@ -12,6 +13,8 @@ public class TutorialTest {
     public final RestClientMockRule service = new RestClientMockRule();
 
     @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
     public static class Pojo {
         String key, value;
     }
@@ -19,7 +22,7 @@ public class TutorialTest {
     @Before
     public void before() {
         service.on("http://example.org/path").reply("value");
-        service.on("http://example.org/pojo").reply("{\"key\":\"k\",\"value\":\"v\"}");
+        service.on("http://example.org/pojo").reply(new Pojo("k", "v"));
     }
 
     @Test

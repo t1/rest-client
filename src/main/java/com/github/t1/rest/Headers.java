@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.MethodExtensions.*;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import static javax.ws.rs.core.MediaType.*;
@@ -7,12 +8,13 @@ import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
 import java.util.*;
+import java.util.ArrayList;
 
 import javax.ws.rs.core.*;
 
-import lombok.*;
-
 import com.github.t1.rest.Headers.Header;
+
+import lombok.*;
 
 @Value
 @Getter(NONE)
@@ -60,6 +62,7 @@ public class Headers implements Iterable<Header> {
     private final Header head;
     private final Headers tail;
 
+    /** creates an {@link #isEmpty() empty} header to start with */
     public Headers() {
         this(null, null);
     }
@@ -69,14 +72,20 @@ public class Headers implements Iterable<Header> {
         this.tail = tail;
         if (head != null)
             checkForDuplicates(head.name());
+        assert tail != null : "a null-header should have no tail";
     }
 
     private void checkForDuplicates(String name) {
-        if (tail == null || tail.head == null)
+        if (tail.isEmpty())
             return;
         if (tail.head.isNamed(name))
             throw new IllegalStateException(name + " header already set");
         tail.checkForDuplicates(name);
+    }
+
+    /** is this a {@link #Headers empty} header */
+    public boolean isEmpty() {
+        return head == null;
     }
 
     public Headers contentType(MediaType mediaType) {
@@ -90,6 +99,10 @@ public class Headers implements Iterable<Header> {
         if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
             contentType = contentType.substring(1, contentType.length() - 9);
         return MediaType.valueOf(contentType);
+    }
+
+    public Headers contentLength(Integer contentLength) {
+        return header(CONTENT_LENGTH, contentLength);
     }
 
     public Integer contentLength() {
@@ -119,6 +132,10 @@ public class Headers implements Iterable<Header> {
             result.add(MediaType.valueOf(value));
         }
         return result;
+    }
+
+    public Headers basicAuth(Credentials credentials) {
+        return basicAuth(credentials.userName(), credentials.password());
     }
 
     public Headers basicAuth(String userName, String password) {
@@ -188,5 +205,15 @@ public class Headers implements Iterable<Header> {
             out.append(header);
         }
         return out.toString();
+    }
+
+    public Headers with(String name, String value) {
+        Headers out = new Headers();
+        for (Header header : this) {
+            String replacedName = replaceVariable(header.name(), name, value);
+            String replacedValue = replaceVariable(header.value(), name, value);
+            out = out.header(replacedName, replacedValue);
+        }
+        return out;
     }
 }

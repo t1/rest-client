@@ -1,22 +1,21 @@
 package com.github.t1.rest;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 
-import javax.ws.rs.core.Response.Status;
+import javax.ws.rs.core.Response.*;
 import javax.ws.rs.core.Response.Status.Family;
-import javax.ws.rs.core.Response.StatusType;
 
-import lombok.Value;
+import org.apache.http.client.methods.*;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.client.CloseableHttpClient;
+
+import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.*;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.*;
-
 @Slf4j
-public abstract class HttpRequest {
+abstract class HttpRequest {
     @Value
     @Accessors(fluent = false)
     private final class UnknownStatus implements StatusType {
@@ -33,47 +32,39 @@ public abstract class HttpRequest {
         }
     }
 
-    private static final CloseableHttpClient CLIENT = HttpClients.createDefault();
-
-    public static final int DEFAULT_CONNECTION_REQUEST_TIMEOUT = 1;
-    public static final int DEFAULT_CONNECT_TIMEOUT = 1_000;
-    public static final int DEFAULT_SOCKET_TIMEOUT = 5_000;
-
-    private final RequestConfig config = RequestConfig.custom() //
-            .setConnectionRequestTimeout(DEFAULT_CONNECTION_REQUEST_TIMEOUT) //
-            .setConnectTimeout(DEFAULT_CONNECT_TIMEOUT) //
-            .setSocketTimeout(DEFAULT_SOCKET_TIMEOUT) //
-            .build();
-
-    private final Headers requestHeaders;
+    @Getter
+    private final RestConfig config;
+    private final CloseableHttpClient apacheClient;
     private final HttpRequestBase request;
+    @Getter
+    private final Headers requestHeaders;
 
-    public HttpRequest(HttpRequestBase request, Headers requestHeaders) {
-        this.requestHeaders = requestHeaders;
+    public HttpRequest(RestConfig config, CloseableHttpClient apacheClient, HttpRequestBase request,
+            Headers requestHeaders) {
+        this.config = config;
+        this.apacheClient = apacheClient;
         this.request = request;
-        addRequestHeaders();
-        setConfig();
+        this.requestHeaders = requestHeaders;
+        addRequestHeaders(requestHeaders);
+        // request.setConfig(config);
     }
 
-    private void addRequestHeaders() {
+    private void addRequestHeaders(Headers requestHeaders) {
         for (Headers.Header header : requestHeaders) {
             request.addHeader(header.name(), header.value());
         }
     }
 
-    private void setConfig() {
-        request.setConfig(config);
-    }
-
     /** The {@link RestResponse}/{@link EntityResponse} is responsible to close the input stream */
+    // if converting fails, the connection has to be closed, but not when it can be passed to the EntityResponse
     @SuppressWarnings("resource")
     public RestResponse execute() {
         log.debug("execute {}", request);
         CloseableHttpResponse apacheResponse = null;
         try {
-            apacheResponse = CLIENT.execute(request);
+            apacheResponse = apacheClient.execute(request);
             return convert(apacheResponse);
-        } catch (ConnectTimeoutException e) {
+        } catch (ConnectTimeoutException | SocketTimeoutException e) {
             close(apacheResponse, e);
             throw new HttpTimeoutException("can't execute " + request, e);
         } catch (IOException e) {
@@ -102,8 +93,6 @@ public abstract class HttpRequest {
         return status;
     }
 
-    // we are very conservative with this: if the converting fails, the connection has to be closed
-    // but not when it can be passed to the EntityResponse
     private void close(CloseableHttpResponse apacheResponse, Exception e) {
         if (apacheResponse != null) {
             try {

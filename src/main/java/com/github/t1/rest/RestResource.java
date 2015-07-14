@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.RestConfig.*;
 import static java.util.Arrays.*;
 
 import java.net.URI;
@@ -7,31 +8,47 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
-import lombok.Getter;
+import com.github.t1.rest.UriTemplate.*;
 
-import com.github.t1.rest.UriTemplate.NonFragment;
-import com.github.t1.rest.UriTemplate.UriPath;
+import lombok.Value;
 
 /**
  * Basically just the template for an URI, where a resource is located. The {@link URI#getScheme() scheme} must be
  * either <code>http</code> or <code>https</code>.
  */
-@Getter
+@Value
 public class RestResource {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
+    private final RestConfig config;
     private final NonFragment uri;
 
+    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
     public RestResource(URI uri) {
         this(UriTemplate.fromString(uri.toString()));
     }
 
+    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
     public RestResource(String uri) {
         this(UriTemplate.fromString(uri));
     }
 
+    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
     public RestResource(UriTemplate uri) {
+        this(DEFAULT_CONFIG, uri);
+    }
+
+    public RestResource(RestConfig config, URI uri) {
+        this(config, UriTemplate.fromString(uri.toString()));
+    }
+
+    public RestResource(RestConfig config, String uri) {
+        this(config, UriTemplate.fromString(uri));
+    }
+
+    public RestResource(RestConfig config, UriTemplate uri) {
         this.uri = check(uri);
+        this.config = config;
     }
 
     public String authority() {
@@ -45,7 +62,7 @@ public class RestResource {
     }
 
     public RestResource path(String path) {
-        NonFragment subPath = ((UriPath) this.uri).path(path);
+        NonFragment subPath = ((UriPath) this.uri).parsePath(path);
         return new RestResource(subPath);
     }
 
@@ -108,5 +125,13 @@ public class RestResource {
     @Override
     public String toString() {
         return uri.toString();
+    }
+
+    public RestResponse put(Object value) {
+        return null;
+    }
+
+    public RestResponse put(MediaType type, Object value) {
+        return null;
     }
 }

@@ -7,11 +7,11 @@ import static org.mockito.Mockito.*;
 import java.io.ByteArrayInputStream;
 import java.net.URI;
 
-import lombok.RequiredArgsConstructor;
-
 import org.junit.rules.ExternalResource;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import lombok.RequiredArgsConstructor;
 
 public class RestClientMockRule extends ExternalResource {
     @RequiredArgsConstructor
@@ -20,13 +20,13 @@ public class RestClientMockRule extends ExternalResource {
         protected Headers headers = new Headers();
 
         @SuppressWarnings("unchecked")
-        public void reply(final String string) {
+        public void reply(final Object object) {
             when(request.execute()).then(new Answer<EntityResponse<Object>>() {
                 @Override
                 public EntityResponse<Object> answer(InvocationOnMock invocation) {
                     ResponseConverter<Object> responseConverter = invocation.getArgumentAt(0, ResponseConverter.class);
-                    ByteArrayInputStream inputStream = new ByteArrayInputStream(string.getBytes());
-                    return new EntityResponse<>(OK, headers, responseConverter, inputStream);
+                    ByteArrayInputStream inputStream = new ByteArrayInputStream(object.toString().getBytes());
+                    return new EntityResponse<>(null, OK, headers, responseConverter, inputStream);
                 }
             });
         }
@@ -37,13 +37,14 @@ public class RestClientMockRule extends ExternalResource {
 
     @Override
     protected void before() {
-        this.originalRequestFactory = EntityRequest.CONFIG.requestFactory();
-        EntityRequest.CONFIG.requestFactory(requestFactoryMock);
+        // FIXME
+        // this.originalRequestFactory = EntityRequest.CONFIG.requestFactory();
+        // EntityRequest.CONFIG.requestFactory(requestFactoryMock);
     }
 
     @Override
     protected void after() {
-        EntityRequest.CONFIG.requestFactory(originalRequestFactory);
+        // EntityRequest.CONFIG.requestFactory(originalRequestFactory);
     }
 
     public RequestMock on(String uri) {
@@ -53,8 +54,8 @@ public class RestClientMockRule extends ExternalResource {
     @SuppressWarnings("unchecked")
     public RequestMock on(URI uri) {
         GetRequest<?> getRequest = mock(GetRequest.class);
-        when(requestFactoryMock.createGetRequest(eq(uri), any(Headers.class), any(ResponseConverter.class)))
-                .thenReturn(getRequest);
+        when(requestFactoryMock.createGetRequest(any(RestConfig.class), eq(uri), any(Headers.class), //
+                any(ResponseConverter.class))).thenReturn(getRequest);
         return new RequestMock(getRequest);
     }
 }
