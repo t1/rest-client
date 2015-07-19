@@ -15,7 +15,7 @@ import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-abstract class HttpRequest {
+abstract class RestCall {
     @Value
     @Accessors(fluent = false)
     private final class UnknownStatus implements StatusType {
@@ -39,7 +39,7 @@ abstract class HttpRequest {
     @Getter
     private final Headers requestHeaders;
 
-    public HttpRequest(RestConfig config, CloseableHttpClient apacheClient, HttpRequestBase request,
+    public RestCall(RestConfig config, CloseableHttpClient apacheClient, HttpRequestBase request,
             Headers requestHeaders) {
         this.config = config;
         this.apacheClient = apacheClient;

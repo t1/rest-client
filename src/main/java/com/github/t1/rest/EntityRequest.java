@@ -38,7 +38,7 @@ public class EntityRequest<T> extends RestRequest {
      * (as it indicates that a GET is executed), and anything else I could think of.
      */
     public EntityResponse<T> GET_Response() {
-        GetRequest<T> request = config().createGetRequest(uri(), headers, converter);
+        RestGetCall<T> request = config().createRestGetCall(uri(), headers, converter);
         return request.execute();
     }
 

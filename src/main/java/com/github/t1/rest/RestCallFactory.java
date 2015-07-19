@@ -6,8 +6,8 @@ import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.cache.*;
 
-/** A factory for all types of {@link HttpRequest}s. Useful for mocking. */
-public class RequestFactory {
+/** A factory for all types of {@link RestCall}s. Useful for mocking. */
+public class RestCallFactory {
     private static final int DEFAULT_MAX_CACHE_ENTRIES = 1000;
     private static final int DEFAULT_MAX_CACHE_OBJECT_SIZE = 8192;
 
@@ -31,8 +31,8 @@ public class RequestFactory {
             .setDefaultRequestConfig(DEFAULT_CONFIG) //
             .build();
 
-    public <T> GetRequest<T> createGetRequest(RestConfig config, URI uri, Headers headers,
+    public <T> RestGetCall<T> createRestGetCall(RestConfig config, URI uri, Headers headers,
             ResponseConverter<T> converter) {
-        return new GetRequest<>(config, CLIENT, uri, headers, converter);
+        return new RestGetCall<>(config, CLIENT, uri, headers, converter);
     }
 }

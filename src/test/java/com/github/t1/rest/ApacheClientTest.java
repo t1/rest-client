@@ -12,7 +12,7 @@ public class ApacheClientTest {
     public void shouldConfigureTimeouts() {
         HttpRequestBase dummy = new HttpGet();
         @SuppressWarnings("unused")
-        HttpRequest request = new HttpRequest(null, null, dummy, new Headers()) {
+        RestCall request = new RestCall(null, null, dummy, new Headers()) {
             @Override
             protected RestResponse convert(CloseableHttpResponse apacheResponse) {
                 return null;

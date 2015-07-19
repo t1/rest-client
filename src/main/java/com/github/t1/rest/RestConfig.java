@@ -21,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
  * <ul>
  * <li>The {@link RestResourceRegistry} to create the base uris for {@link RestResource}</li>
  * <li>The credentials to use by base uri</li>
- * <li>The {@link RequestFactory} to create requests</li>
+ * <li>The {@link RestCallFactory} to create requests</li>
  * <li>The readers to convert bodies from their {@link MediaType} to the target object</li>
  * </ul>
  * For most applications, one of these is enough, so there's a default singleton: #DEFAULT_CONFIG}.
@@ -34,7 +34,7 @@ public class RestConfig {
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
     @Getter
     @Setter
-    private RequestFactory requestFactory = new RequestFactory();
+    private RestCallFactory requestFactory = new RestCallFactory();
 
     @Inject
     private Instance<RestResourceRegistry> uriRegistryInstances;
@@ -109,6 +109,10 @@ public class RestConfig {
         return (NonQuery) uri;
     }
 
+    public RestResource resource(URI uri) {
+        return resource(UriTemplate.from(uri));
+    }
+
     public RestResource resource(NonQuery uri, String... path) {
         for (String item : path)
             uri = uri.path(item);
@@ -160,11 +164,11 @@ public class RestConfig {
         return (List) readers;
     }
 
-    public <T> GetRequest<T> createGetRequest(URI uri, Headers headers, ResponseConverter<T> converter) {
+    public <T> RestGetCall<T> createRestGetCall(URI uri, Headers headers, ResponseConverter<T> converter) {
         Credentials credentials = getCredentials(uri);
         if (credentials != null)
             headers = headers.basicAuth(credentials);
-        return requestFactory.createGetRequest(this, uri, headers, converter);
+        return requestFactory.createRestGetCall(this, uri, headers, converter);
     }
 
     public RestConfig put(URI baseUri, Credentials credentials) {

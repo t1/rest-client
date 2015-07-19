@@ -11,10 +11,10 @@ import org.apache.http.impl.client.CloseableHttpClient;
 
 import lombok.SneakyThrows;
 
-class GetRequest<T> extends HttpRequest {
+class RestGetCall<T> extends RestCall {
     private final ResponseConverter<T> converter;
 
-    public GetRequest(RestConfig config, CloseableHttpClient apacheClient, URI uri, Headers requestHeaders,
+    public RestGetCall(RestConfig config, CloseableHttpClient apacheClient, URI uri, Headers requestHeaders,
             ResponseConverter<T> converter) {
         super(config, apacheClient, new HttpGet(uri), requestHeaders);
         this.converter = converter;

@@ -176,7 +176,7 @@ public class CredentialsTest {
     public void shouldAddBasicAuthHeader() {
         givenCredentials();
 
-        GetRequest<?> request = config.createGetRequest(baseUri, new Headers(), null);
+        RestGetCall<?> request = config.createRestGetCall(baseUri, new Headers(), null);
 
         String auth = request.requestHeaders().get("Authorization");
         assertEquals("Basic " + BASE64_CREDENTIALS, auth);

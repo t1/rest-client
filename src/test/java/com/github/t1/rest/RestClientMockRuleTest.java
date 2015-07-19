@@ -22,13 +22,22 @@ public class RestClientMockRuleTest {
 
     private static final Pojo POJO = new Pojo("k", "v");
 
-    @Rule
-    public final RestClientMockRule service = new RestClientMockRule();
+    public final RestClientMocker mock = new RestClientMocker();
+
+    @Before
+    public void before() {
+        mock.before();
+    }
+
+    @After
+    public void after() {
+        mock.after();
+    }
 
 
     @Test
     public void shouldGetString() {
-        service.on(BASE + "/string").GET("value");
+        mock.on(BASE + "/string").GET().respond("value");
 
         String value = new RestResource(BASE + "/string").GET();
 
@@ -37,7 +46,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldGetInt() {
-        service.on(BASE + "/int").GET(123);
+        mock.on(BASE + "/int").GET().respond(123);
 
         int value = new RestResource(BASE + "/int").GET(int.class);
 
@@ -46,7 +55,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldGetPojo() {
-        service.on(BASE + "/pojo").GET(POJO);
+        mock.on(BASE + "/pojo").GET().respond(POJO);
 
         Pojo value = new RestResource(BASE + "/pojo").GET(Pojo.class);
 
@@ -55,7 +64,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldGetFromRegistry() {
-        service.on(BASE + "/pojo").GET(POJO);
+        mock.on(BASE + "/pojo").GET().respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         Pojo value = rest.resource("example").GET(Pojo.class);
@@ -65,7 +74,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldGetFromRegistryAddingPath() {
-        service.on(BASE + "/pojo").GET(POJO);
+        mock.on(BASE + "/pojo").GET().respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE);
 
         Pojo value = rest.resource("example", "/pojo").GET(Pojo.class);
@@ -75,7 +84,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldFailBasicAuth() {
-        service.on(BASE + "/pojo").requireBasicAuth("u", "p").GET(POJO);
+        mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "p").respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
@@ -85,7 +94,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldFailBasicAuthWithWrongUsername() {
-        service.on(BASE + "/pojo").requireBasicAuth("x", "p").GET(POJO);
+        mock.on(BASE + "/pojo").GET().requireBasicAuth("x", "p").respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
@@ -95,7 +104,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldFailBasicAuthWithWrongPassword() {
-        service.on(BASE + "/pojo").requireBasicAuth("u", "x").GET(POJO);
+        mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "x").respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
@@ -105,7 +114,7 @@ public class RestClientMockRuleTest {
 
     @Test
     public void shouldAuthenticate() {
-        service.on(BASE + "/pojo").requireBasicAuth("u", "p").GET(POJO);
+        mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "p").respond(POJO);
         RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo").put(BASE, new Credentials("u", "p"));
 
         Pojo response = rest.resource("example").GET(Pojo.class);
