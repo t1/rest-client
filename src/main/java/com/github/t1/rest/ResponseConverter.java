@@ -1,6 +1,7 @@
 package com.github.t1.rest;
 
 import static com.github.t1.rest.VendorType.*;
+import static java.util.Locale.*;
 import static javax.ws.rs.core.MediaType.*;
 
 import java.io.*;
@@ -49,14 +50,14 @@ public class ResponseConverter<T> {
         }
     }
 
-    private List<MediaType> mediaTypes(MessageBodyReader<T> bean) {
+    private List<MediaType> mediaTypes(MessageBodyReader<T> reader) {
         List<MediaType> list = new ArrayList<>();
-        Consumes consumes = bean.getClass().getAnnotation(Consumes.class);
+        Consumes consumes = reader.getClass().getAnnotation(Consumes.class);
         if (consumes != null)
             for (String mediaType : consumes.value())
                 list.add(MediaType.valueOf(mediaType));
         if (list.isEmpty()) {
-            log.debug("no media type annotation (@Consumes) found on {}; fallback to wildcard", bean.getClass());
+            log.debug("no media type annotation (@Consumes) found on {}; fallback to wildcard", reader.getClass());
             list.add(WILDCARD_TYPE);
         }
         return list;
@@ -73,7 +74,7 @@ public class ResponseConverter<T> {
     private String vendorTypeString() {
         String vendorTypeValue = vendorType.value();
         if (USE_CLASS_NAME.equals(vendorTypeValue))
-            vendorTypeValue = acceptedType.getName();
+            vendorTypeValue = acceptedType.getName().toLowerCase(US);
         return vendorTypeValue;
     }
 
@@ -92,7 +93,7 @@ public class ResponseConverter<T> {
             } catch (IOException f) {
                 e.addSuppressed(f);
             }
-            throw new RuntimeException("can't read", e);
+            throw new RuntimeException("can't read: " + e.getMessage(), e);
         }
     }
 
@@ -116,8 +117,8 @@ public class ResponseConverter<T> {
 
     @Override
     public String toString() {
-        return "Converter for " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) + " using "
-                + readers.values();
+        return "Converter " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) //
+                + ": " + readers.keySet();
     }
 
     /** iff the type to convert to is {@link Closeable}, the client has to do so in order to close the stream */

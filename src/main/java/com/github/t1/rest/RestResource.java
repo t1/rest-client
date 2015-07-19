@@ -8,20 +8,19 @@ import java.util.List;
 
 import javax.ws.rs.core.MediaType;
 
-import com.github.t1.rest.UriTemplate.*;
-
 import lombok.Value;
 
 /**
- * Basically just the template for an URI, where a resource is located. The {@link URI#getScheme() scheme} must be
- * either <code>http</code> or <code>https</code>.
+ * Wraps the template for an http/https URI, where a resource is located, and a {@link RestConfig configuration}. If you
+ * create a {@link RestResource} without specifying the config, the {@link RestConfig#DEFAULT_CONFIG default config} is
+ * used. A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
  */
 @Value
 public class RestResource {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
     private final RestConfig config;
-    private final NonFragment uri;
+    private final UriTemplate uri;
 
     /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
     public RestResource(URI uri) {
@@ -55,25 +54,10 @@ public class RestResource {
         return uri.authority();
     }
 
-    private static NonFragment check(UriTemplate uri) {
+    private static UriTemplate check(UriTemplate uri) {
         if (!ALLOWED_SCHEMES.contains(uri.scheme()))
             throw new RuntimeException("unsupported scheme for REST: " + uri.scheme());
-        return (NonFragment) uri;
-    }
-
-    public RestResource path(String path) {
-        NonFragment subPath = ((UriPath) this.uri).parsePath(path);
-        return new RestResource(subPath);
-    }
-
-    public RestResource matrix(String name, Object value) {
-        NonFragment subPath = ((UriPath) this.uri).matrix(name, value.toString());
-        return new RestResource(subPath);
-    }
-
-    public RestResource query(String key, String value) {
-        NonFragment subPath = this.uri.query(key, value);
-        return new RestResource(subPath);
+        return uri;
     }
 
     public RestRequest request() {
@@ -98,8 +82,8 @@ public class RestResource {
         return request().accept(acceptedType, contentType);
     }
 
-    public RestRequest basicAuth(String userName, String password) {
-        return request().basicAuth(userName, password);
+    public RestRequest basicAuth(Credentials credentials) {
+        return request().basicAuth(credentials);
     }
 
     public RestRequest header(String name, Object value) {
@@ -110,28 +94,42 @@ public class RestResource {
         return new RestResource(uri.with(name, value));
     }
 
-    public <T> EntityResponse<T> getResponse(Class<T> acceptedType) {
-        return accept(acceptedType).getResponse();
+    /**
+     * Execute a http GET and return the body as a String,
+     * {@link RestResponse#expecting(javax.ws.rs.core.Response.StatusType...) expecting}
+     * {@link javax.ws.rs.core.Response.Status#OK OK}
+     */
+    public String GET() {
+        return GET(String.class);
     }
 
-    public EntityResponse<Object> getResponse() {
-        return accept(Object.class).getResponse();
+    /**
+     * Execute a http GET and return the body of that type,
+     * {@link RestResponse#expecting(javax.ws.rs.core.Response.StatusType...) expecting}
+     * {@link javax.ws.rs.core.Response.Status#OK OK}
+     */
+    public <T> T GET(Class<T> acceptedType) {
+        return accept(acceptedType).GET();
     }
 
-    public <T> T get(Class<T> acceptedType) {
-        return getResponse(acceptedType).get();
+    public EntityResponse<Object> GET_Response() {
+        return accept(Object.class).GET_Response();
+    }
+
+    public <T> EntityResponse<T> GET_Response(Class<T> acceptedType) {
+        return accept(acceptedType).GET_Response();
+    }
+
+    public RestResponse PUT(Object value) {
+        return null;
+    }
+
+    public RestResponse PUT(MediaType type, Object value) {
+        return null;
     }
 
     @Override
     public String toString() {
         return uri.toString();
-    }
-
-    public RestResponse put(Object value) {
-        return null;
-    }
-
-    public RestResponse put(MediaType type, Object value) {
-        return null;
     }
 }

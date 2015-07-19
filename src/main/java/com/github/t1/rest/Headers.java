@@ -89,64 +89,6 @@ public class Headers implements Iterable<Header> {
         return head == null;
     }
 
-    public Headers contentType(MediaType mediaType) {
-        return header(CONTENT_TYPE, mediaType);
-    }
-
-    public MediaType contentType() {
-        String contentType = get(CONTENT_TYPE);
-        if (contentType == null)
-            return WILDCARD_TYPE;
-        if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
-            contentType = contentType.substring(1, contentType.length() - 9);
-        return MediaType.valueOf(contentType);
-    }
-
-    public Headers contentLength(Integer contentLength) {
-        return header(CONTENT_LENGTH, contentLength);
-    }
-
-    public Integer contentLength() {
-        String contentLength = get(CONTENT_LENGTH);
-        if (contentLength == null)
-            return null;
-        return Integer.valueOf(contentLength);
-    }
-
-    public Headers accept(MediaType... mediaTypes) {
-        return accept(asList(mediaTypes));
-    }
-
-    public Headers accept(List<MediaType> mediaTypes) {
-        StringBuilder out = new StringBuilder();
-        for (MediaType mediaType : mediaTypes) {
-            if (out.length() > 0)
-                out.append(", ");
-            out.append(mediaType);
-        }
-        return header(ACCEPT, out.toString());
-    }
-
-    public List<MediaType> accept() {
-        List<MediaType> result = new ArrayList<>();
-        for (String value : header(ACCEPT).multiValue()) {
-            result.add(MediaType.valueOf(value));
-        }
-        return result;
-    }
-
-    public Headers basicAuth(Credentials credentials) {
-        return basicAuth(credentials.userName(), credentials.password());
-    }
-
-    public Headers basicAuth(String userName, String password) {
-        return header(AUTHORIZATION, "Basic " + base64(userName + ":" + password));
-    }
-
-    private String base64(String string) {
-        return printBase64Binary(string.getBytes());
-    }
-
     public Headers header(String name, Object value) {
         return new Headers(new Header(name, value.toString()), this);
     }
@@ -216,5 +158,78 @@ public class Headers implements Iterable<Header> {
             out = out.header(replacedName, replacedValue);
         }
         return out;
+    }
+
+
+    public Headers contentType(MediaType mediaType) {
+        return header(CONTENT_TYPE, mediaType);
+    }
+
+    public MediaType contentType() {
+        String contentType = get(CONTENT_TYPE);
+        if (contentType == null)
+            return WILDCARD_TYPE;
+        if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
+            contentType = contentType.substring(1, contentType.length() - 9);
+        return MediaType.valueOf(contentType);
+    }
+
+
+    public Headers contentLength(Integer contentLength) {
+        return header(CONTENT_LENGTH, contentLength);
+    }
+
+    public Integer contentLength() {
+        String contentLength = get(CONTENT_LENGTH);
+        if (contentLength == null)
+            return null;
+        return Integer.valueOf(contentLength);
+    }
+
+
+    public Headers accept(MediaType... mediaTypes) {
+        return accept(asList(mediaTypes));
+    }
+
+    public Headers accept(List<MediaType> mediaTypes) {
+        StringBuilder out = new StringBuilder();
+        for (MediaType mediaType : mediaTypes) {
+            if (out.length() > 0)
+                out.append(", ");
+            out.append(mediaType);
+        }
+        return header(ACCEPT, out.toString());
+    }
+
+    public List<MediaType> accept() {
+        List<MediaType> result = new ArrayList<>();
+        for (String value : header(ACCEPT).multiValue()) {
+            result.add(MediaType.valueOf(value));
+        }
+        return result;
+    }
+
+    public boolean accepts(MediaType required) {
+        for (MediaType accepted : accept())
+            if (accepted.isCompatible(required))
+                return true;
+        return false;
+    }
+
+
+    public Headers basicAuth(Credentials credentials) {
+        return header(AUTHORIZATION, basicAuthValue(credentials));
+    }
+
+    public boolean isBasicAuth(Credentials credentials) {
+        return contains(AUTHORIZATION) && get(AUTHORIZATION).equals(basicAuthValue(credentials));
+    }
+
+    private String basicAuthValue(Credentials credentials) {
+        return "Basic " + base64(credentials.userName() + ":" + credentials.password());
+    }
+
+    private String base64(String string) {
+        return printBase64Binary(string.getBytes());
     }
 }

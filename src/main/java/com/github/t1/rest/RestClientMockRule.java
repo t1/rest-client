@@ -7,11 +7,12 @@ import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
 import java.io.*;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Type;
+import java.lang.reflect.Method;
 import java.net.URI;
+import java.util.*;
 
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
 
 import org.junit.rules.ExternalResource;
 import org.mockito.invocation.InvocationOnMock;
@@ -24,45 +25,111 @@ import lombok.*;
 
 public class RestClientMockRule extends ExternalResource {
     @RequiredArgsConstructor
-    public static class RequestMock {
-        private final GetRequest<?> request;
+    public class RequestMock {
+        private final UriTemplate uri;
 
-        protected Headers headers = new Headers();
+        protected Headers requestHeaders;
+        protected ResponseConverter<Object> responseConverter;
 
-        public void reply(final Object object) {
-            when(request.execute()).then(new Answer<EntityResponse<Object>>() {
+        private Credentials requiredBasicAuthCredentials;
+
+        public void GET(final Object object) {
+            final GetRequest<?> getRequest = mock(GetRequest.class);
+            mockCreateGetRequest(getRequest);
+            when(getRequest.config()).thenReturn(config);
+            when(getRequest.execute()).then(new Answer<EntityResponse<Object>>() {
+                private Headers responseHeaders;
+
                 @Override
                 public EntityResponse<Object> answer(InvocationOnMock invocation) {
-                    ResponseConverter<Object> converter = converter(object);
-                    InputStream inputStream = stream(object);
-                    return new EntityResponse<>(null, OK, headers, converter, inputStream);
+                    this.responseHeaders = new Headers();
+                    if (requiredBasicAuthCredentials != null)
+                        if (!requestHeaders.isBasicAuth(requiredBasicAuthCredentials))
+                            return response(UNAUTHORIZED, stream(""));
+                    return response(OK, stream(object));
+                }
+
+                private EntityResponse<Object> response(Status status, InputStream inputStream) {
+                    return new EntityResponse<>(null, status, responseHeaders, responseConverter, inputStream);
                 }
 
                 @SneakyThrows(JsonProcessingException.class)
                 private ByteArrayInputStream stream(Object object) {
-                    return new ByteArrayInputStream(JsonMessageBodyReader.MAPPER.writeValueAsBytes(object));
+                    if (object instanceof String && requestHeaders.accepts(TEXT_PLAIN_TYPE)) {
+                        contentType(TEXT_PLAIN_TYPE);
+                        return new ByteArrayInputStream(((String) object).getBytes());
+                    }
+                    if (requestHeaders.accepts(APPLICATION_JSON_TYPE)) {
+                        contentType(APPLICATION_JSON_TYPE);
+                        return new ByteArrayInputStream(JsonMessageBodyReader.MAPPER.writeValueAsBytes(object));
+                    }
+                    throw new UnsupportedOperationException("the mock can't yet convert to any of " //
+                            + requestHeaders.accept());
                 }
 
-                private ResponseConverter<Object> converter(final Object object) {
-                    @SuppressWarnings("unchecked")
-                    ResponseConverter<Object> converter =
-                            (ResponseConverter<Object>) new ResponseConverter<>(object.getClass());
-                    converter.addIfReadable(new JsonMessageBodyReader() {
-                        @Override
-                        public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations,
-                                MediaType mediaType) {
-                            return true;
-                        }
-                    }, APPLICATION_JSON_TYPE);
-                    return converter;
+                private void contentType(MediaType type) {
+                    responseHeaders = responseHeaders.contentType(type);
                 }
             });
+        }
+
+        @SuppressWarnings("unchecked")
+        private void mockCreateGetRequest(final GetRequest<?> getRequest) {
+            RestClientMockRule.this.mockedUris.add(uri);
+            when(requestFactoryMock.createGetRequest(any(RestConfig.class), eq(uri.toUri()), any(Headers.class), //
+                    any(ResponseConverter.class))).thenAnswer(new Answer<GetRequest<?>>() {
+                        @Override
+                        public GetRequest<?> answer(InvocationOnMock invocation) {
+                            if (invocation.getArgumentAt(0, RestConfig.class) != RestClientMockRule.this.config)
+                                throw new AssertionError("called mock with wrong config");
+                            requestHeaders = invocation.getArgumentAt(2, Headers.class);
+                            responseConverter = invocation.getArgumentAt(3, ResponseConverter.class);
+                            return getRequest;
+                        }
+                    });
+        }
+
+        public RequestMock requireBasicAuth(String username, String password) {
+            return requireBasicAuth(new Credentials(username, password));
+        }
+
+        public RequestMock requireBasicAuth(Credentials credentials) {
+            this.requiredBasicAuthCredentials = credentials;
+            return this;
         }
     }
 
     private final RestConfig config;
     private RequestFactory originalRequestFactory;
-    public RequestFactory requestFactoryMock = mock(RequestFactory.class);
+    private final Set<UriTemplate> mockedUris = new LinkedHashSet<>();
+    public RequestFactory requestFactoryMock =
+            mock(RequestFactory.class, withSettings().defaultAnswer(new Answer<Object>() {
+                @Override
+                public Object answer(InvocationOnMock invocation) {
+                    if (isStubbing(invocation))
+                        return null;
+                    assert invocation.getMethod().equals(createGetRequestMethod());
+                    throw new IllegalArgumentException(
+                            "unmocked createGetRequest on " + invocation.getArgumentAt(1, URI.class) + "\n"//
+                                    + "only know: " + mockedUris);
+                }
+
+                private Method createGetRequestMethod() {
+                    try {
+                        return RequestFactory.class.getMethod("createGetRequest", RestConfig.class, URI.class,
+                                Headers.class, ResponseConverter.class);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                private boolean isStubbing(InvocationOnMock invocation) {
+                    for (Object argument : invocation.getArguments())
+                        if (argument != null)
+                            return false;
+                    return true;
+                }
+            }));
 
     public RestClientMockRule() {
         this(DEFAULT_CONFIG);
@@ -84,15 +151,14 @@ public class RestClientMockRule extends ExternalResource {
     }
 
     public RequestMock on(String uri) {
-        return on(URI.create(uri));
+        return on(UriTemplate.fromString(uri));
     }
 
-    @SuppressWarnings("unchecked")
     public RequestMock on(URI uri) {
-        GetRequest<?> getRequest = mock(GetRequest.class);
-        when(requestFactoryMock.createGetRequest(any(RestConfig.class), eq(uri), any(Headers.class), //
-                any(ResponseConverter.class))).thenReturn(getRequest);
-        when(getRequest.config()).thenReturn(config);
-        return new RequestMock(getRequest);
+        return on(UriTemplate.from(uri));
+    }
+
+    public RequestMock on(UriTemplate uri) {
+        return new RequestMock(uri);
     }
 }

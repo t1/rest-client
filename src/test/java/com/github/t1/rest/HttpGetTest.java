@@ -165,7 +165,7 @@ public class HttpGetTest {
         @GET
         @Path("/zombie-apocalypse")
         public Response zombieAcopalypse() {
-            return Response.status(799).build(); // TODO get real code for zombie apocalypse
+            return Response.status(793).build();
         }
     }
 
@@ -174,12 +174,14 @@ public class HttpGetTest {
             new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
 
     @javax.enterprise.inject.Produces
-    ResourceFactory resourceFactory = new ResourceFactory() {
-        @Override
-        public RestResource forName(String name) {
-            return ("test".equals(name)) ? new RestResource(service.baseUri()) : null;
-        }
-    };
+    RestResourceRegistry testResource() {
+        return new StaticRestResourceRegistry("test", new RestResource(service.baseUri()));
+    }
+
+    @javax.enterprise.inject.Produces
+    RestResourceRegistry otherResource() {
+        return new StaticRestResourceRegistry("other", new RestResource("http://twitter.com"));
+    }
 
     @Inject
     RestConfig rest = new RestConfig();
@@ -188,6 +190,10 @@ public class HttpGetTest {
     public void before() {
         setLogLevel("org.apache.http.wire", DEBUG);
         setLogLevel("com.github.t1.rest", DEBUG);
+    }
+
+    private RestResource base(String... path) {
+        return rest.resource("test", path);
     }
 
     private RestResource base() {
@@ -200,7 +206,7 @@ public class HttpGetTest {
 
     @SuppressWarnings("deprecation")
     private <T> EntityRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
-        return base().path(path).accept(type, mediaType);
+        return base(path).accept(type, mediaType);
     }
 
     @SuppressWarnings("unused")
@@ -211,21 +217,21 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetPing() {
-        String pong = base().path("ping").accept(String.class).get();
+        String pong = base("ping").accept(String.class).GET();
 
         assertEquals("pong", pong);
     }
 
     @Test
     public void shouldGetDirectPing() {
-        String pong = base().path("ping").get(String.class);
+        String pong = base("ping").GET(String.class);
 
         assertEquals("pong", pong);
     }
 
     @Test
     public void shouldGetPingResponse() {
-        EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+        EntityResponse<String> response = base("ping").accept(String.class).GET_Response();
 
         assertEquals("pong", response.get());
         assertEquals("1.1 localhost (Apache-HttpClient/4.5 (cache))", response.header("Via").value());
@@ -235,21 +241,21 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetDirectPingResponse() {
-        EntityResponse<String> response = base().path("ping").getResponse(String.class);
+        EntityResponse<String> response = base("ping").GET_Response(String.class);
 
         assertEquals("pong", response.get());
     }
 
     @Test
     public void shouldGetPingAsStream() throws Exception {
-        try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).get()) {
+        try (InputStream pong = baseAccept("ping", InputStream.class, WILDCARD_TYPE).GET()) {
             assertEquals("pong", ConverterTools.readString(pong, null));
         }
     }
 
     @Test
     public void shouldGetJavaArchiveStream() throws Exception {
-        try (InputStream pong = baseAccept("java-archive", InputStream.class, APPLICATION_JAVA_ARCHIVE_TYPE).get()) {
+        try (InputStream pong = baseAccept("java-archive", InputStream.class, APPLICATION_JAVA_ARCHIVE_TYPE).GET()) {
             assertEquals("this-is-a-jar", ConverterTools.readString(pong, null));
         }
     }
@@ -263,14 +269,14 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetJsonPojo() {
-        JsonPojo pojo = base().path("jsonpojo").get(JsonPojo.class);
+        JsonPojo pojo = base("jsonpojo").GET(JsonPojo.class);
 
         assertEquals("json", pojo.getString());
     }
 
     @Test
     public void shouldGetPojo() {
-        Pojo pojo = base().path("pojo").accept(Pojo.class).get();
+        Pojo pojo = base("pojo").accept(Pojo.class).GET();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -278,7 +284,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetPojoWithPathVariable() {
-        Pojo pojo = base().path("{path}").accept(Pojo.class).with("path", "pojo").get();
+        Pojo pojo = base("{path}").accept(Pojo.class).with("path", "pojo").GET();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -298,7 +304,7 @@ public class HttpGetTest {
     public void shouldGetPojoAsJson() {
         EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
 
-        Pojo pojo = request.get();
+        Pojo pojo = request.GET();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -308,7 +314,7 @@ public class HttpGetTest {
     public void shouldGetPojoAsXml() {
         EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
 
-        Pojo pojo = request.get();
+        Pojo pojo = request.GET();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -318,7 +324,7 @@ public class HttpGetTest {
     public void shouldGetPojoAsYaml() {
         EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
 
-        Pojo pojo = request.get();
+        Pojo pojo = request.GET();
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -329,7 +335,7 @@ public class HttpGetTest {
         MediaType vendorType = MediaType.valueOf("application/vnd.foo+json");
         EntityRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
 
-        FooVendorTypePojo pojo = request.get();
+        FooVendorTypePojo pojo = request.GET();
 
         assertEquals("f", pojo.getString());
         assertEquals(345, pojo.getI());
@@ -340,7 +346,7 @@ public class HttpGetTest {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json");
         EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
-        DefaultVendorTypePojo pojo = request.get();
+        DefaultVendorTypePojo pojo = request.GET();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
@@ -351,7 +357,7 @@ public class HttpGetTest {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml");
         EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
-        DefaultVendorTypePojo pojo = request.get();
+        DefaultVendorTypePojo pojo = request.GET();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
@@ -362,7 +368,7 @@ public class HttpGetTest {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml");
         EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
-        DefaultVendorTypePojo pojo = request.get();
+        DefaultVendorTypePojo pojo = request.GET();
 
         assertEquals("v", pojo.getString());
         assertEquals(456, pojo.getI());
@@ -370,7 +376,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetUntypedPojo() {
-        Pojo pojo = base().path("pojo").getResponse().get(Pojo.class);
+        Pojo pojo = base("pojo").GET_Response().get(Pojo.class);
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -378,8 +384,8 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetTwoVendorTypesWithCommonBaseClass() {
-        EntityRequest<?> request = base().path("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
-        FooVendorTypePojo pojo = request.getResponse().get(FooVendorTypePojo.class);
+        EntityRequest<?> request = base("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
+        FooVendorTypePojo pojo = request.GET_Response().get(FooVendorTypePojo.class);
 
         assertEquals("f", pojo.getString());
         assertEquals(345, pojo.getI());
@@ -387,22 +393,22 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
-        EntityRequest<?> request = base().path("{path}") //
+        EntityRequest<?> request = base("{path}") //
                 .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
 
-        EntityResponse<?> barResponse = request.with("path", "barpojo").getResponse();
+        EntityResponse<?> barResponse = request.with("path", "barpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
                 barResponse.contentType().toString());
         BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
-        EntityResponse<?> bazResponse = request.with("path", "bazpojo").getResponse();
+        EntityResponse<?> bazResponse = request.with("path", "bazpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json",
                 bazResponse.contentType().toString());
         BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
-        EntityResponse<?> bongResponse = request.with("path", "bongpojo").getResponse();
+        EntityResponse<?> bongResponse = request.with("path", "bongpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json",
                 bongResponse.contentType().toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
@@ -411,7 +417,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldAuthorize() {
-        Pojo pojo = base().path("authorized-pojo").basicAuth("user", "pass").get(Pojo.class);
+        Pojo pojo = base("authorized-pojo").basicAuth(new Credentials("user", "pass")).GET(Pojo.class);
 
         assertEquals("authorized", pojo.getString());
         assertEquals(987, pojo.getI());
@@ -419,7 +425,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldDeriveTwoResorucesWithHeaders() {
-        EntityRequest<Pojo> base = base().path("authorized-pojo").accept(Pojo.class);
+        EntityRequest<Pojo> base = base("authorized-pojo").accept(Pojo.class);
         EntityRequest<Pojo> bar = base.header("foo", "bar");
         EntityRequest<Pojo> baz = base.header("foo", "{foobar}").with("foobar", "baz");
 
@@ -435,7 +441,7 @@ public class HttpGetTest {
     @Test
     public void shouldExpectOk() {
         try {
-            base().path("no-content").get(String.class);
+            base("no-content").GET(String.class);
             fail("expected UnexpectedStatusException");
         } catch (UnexpectedStatusException e) {
             assertEquals(NO_CONTENT, e.actual());
@@ -446,7 +452,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldCheckExpectedStatus() {
-        EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+        EntityResponse<String> response = base("ping").accept(String.class).GET_Response();
 
         response.expecting(NO_CONTENT, OK);
     }
@@ -454,7 +460,7 @@ public class HttpGetTest {
     @Test
     public void shouldFailToCheckUnexpectedStatus() {
         try {
-            EntityResponse<String> response = base().path("ping").accept(String.class).getResponse();
+            EntityResponse<String> response = base("ping").accept(String.class).GET_Response();
 
             response.expecting(BAD_REQUEST, NOT_ACCEPTABLE);
             fail("expected UnexpectedStatusException");
@@ -466,9 +472,9 @@ public class HttpGetTest {
 
     @Test
     public void shouldHandleUnknownResponseCode() {
-        StatusType status = base().path("zombie-apocalypse").getResponse().status();
+        StatusType status = base("zombie-apocalypse").GET_Response().status();
 
-        assertEquals(799, status.getStatusCode());
+        assertEquals(793, status.getStatusCode());
         assertEquals("Unknown", status.getReasonPhrase());
         assertEquals(OTHER, status.getFamily());
     }

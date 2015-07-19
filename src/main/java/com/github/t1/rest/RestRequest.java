@@ -38,8 +38,8 @@ public class RestRequest {
         return resource.uri().toUri();
     }
 
-    public <T> T get(Class<T> type) {
-        return accept(type).get();
+    public <T> T GET(Class<T> type) {
+        return accept(type).GET();
     }
 
     public <T> EntityRequest<T> accept(Class<T> acceptedType) {
@@ -65,8 +65,8 @@ public class RestRequest {
         return new EntityRequest<>(resource, headers.accept(converter.mediaTypes()), converter);
     }
 
-    public RestRequest basicAuth(String userName, String password) {
-        return new RestRequest(resource, headers.basicAuth(userName, password));
+    public RestRequest basicAuth(Credentials credentials) {
+        return new RestRequest(resource, headers.basicAuth(credentials));
     }
 
     public RestRequest header(String name, Object value) {

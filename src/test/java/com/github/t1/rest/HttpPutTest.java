@@ -5,14 +5,11 @@ import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import lombok.*;
 
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
@@ -20,6 +17,8 @@ import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.*;
 
 @RunWith(CdiRunner.class)
 public class HttpPutTest {
@@ -67,14 +66,14 @@ public class HttpPutTest {
     }
 
     @ClassRule
-    public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
-            new YamlMessageBodyWriter());
+    public static final DropwizardClientRule service =
+            new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
 
     @Inject
     RestConfig rest = new RestConfig();
 
-    private RestResource base() {
-        return new RestResource(service.baseUri());
+    private RestResource base(String path) {
+        return new RestResource(UriTemplate.fromString(service.baseUri() + "/" + path));
     }
 
     @Before
@@ -90,7 +89,7 @@ public class HttpPutTest {
     @Test
     @Ignore
     public void shouldPutAsDefaultJson() {
-        RestResponse response = base().path("text-plain").put(new Pojo("s", 123));
+        RestResponse response = base("text-plain").PUT(new Pojo("s", 123));
 
         assertEquals("*hi*", response.expecting(OK).header("pong"));
     }
@@ -98,7 +97,7 @@ public class HttpPutTest {
     @Test
     @Ignore
     public void shouldPutAsExplicitTextPlain() {
-        RestResponse response = base().path("text-plain").put(TEXT_PLAIN_TYPE, "hi");
+        RestResponse response = base("text-plain").PUT(TEXT_PLAIN_TYPE, "hi");
 
         assertEquals("*hi*", response.expecting(OK).header("pong"));
     }

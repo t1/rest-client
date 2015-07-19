@@ -6,11 +6,9 @@ import java.util.*;
 
 import javax.ws.rs.core.MultivaluedMap;
 
-import lombok.AllArgsConstructor;
-
-import org.jboss.weld.exceptions.UnsupportedOperationException;
-
 import com.github.t1.rest.Headers.Header;
+
+import lombok.AllArgsConstructor;
 
 /** Based on {@link Headers}; required for some JAX-RS calls; *not* strictly appendable */
 @AllArgsConstructor

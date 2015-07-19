@@ -29,6 +29,6 @@ public class ApacheClientTest {
     @Ignore("this is a slow integration test")
     @Test(expected = HttpTimeoutException.class)
     public void shouldTimeout() {
-        new RestResource("http://httpbin.org/delay/10").get(String.class);
+        new RestResource("http://httpbin.org/delay/10").GET(String.class);
     }
 }

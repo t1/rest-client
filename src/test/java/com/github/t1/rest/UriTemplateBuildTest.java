@@ -174,7 +174,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildRelativeFilePathWithTwoElements() {
-        UriTemplate uri = file.relativePath("path").parsePath("two");
+        UriTemplate uri = file.relativePath("path").path("two");
 
         assertEquals("file:path/two", uri.toString());
         assertEquals("path/two", uri.get());
@@ -200,7 +200,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithTwoPaths() {
-        UriTemplate uri = http.absolutePath("path1").parsePath("path2");
+        UriTemplate uri = http.absolutePath("path1").path("path2");
 
         assertEquals("http:/path1/path2", uri.toString());
         assertEquals("/path1/path2", uri.get());
@@ -208,7 +208,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithThreePaths() {
-        UriTemplate uri = http.absolutePath("path1").parsePath("path2").parsePath("path3");
+        UriTemplate uri = http.absolutePath("path1").path("path2").path("path3");
 
         assertEquals("http:/path1/path2/path3", uri.toString());
         assertEquals("/path1/path2/path3", uri.get());
@@ -222,7 +222,7 @@ public class UriTemplateBuildTest {
     // TODO shouldn't this fail as well?
     @Test
     public void shouldBuildPathElementContainingSlashes() {
-        UriPath path = file.absolutePath("path").parsePath("with/slashes");
+        UriPath path = file.absolutePath("path").path("with/slashes");
 
         assertEquals("file:/path/with/slashes", path.toString());
     }
@@ -230,9 +230,9 @@ public class UriTemplateBuildTest {
     @Test
     public void shouldDeriveMultiplePathsFromOneRoot() {
         UriPath root = http.absolutePath("p");
-        UriPath p1 = root.parsePath("1");
-        UriPath p2 = root.parsePath("2");
-        UriPath p3 = root.parsePath("3").parsePath("4");
+        UriPath p1 = root.path("1");
+        UriPath p2 = root.path("2");
+        UriPath p3 = root.path("3").path("4");
 
         assertEquals("http:/p/1", p1.toString());
         assertEquals("http:/p/2", p2.toString());
@@ -272,7 +272,7 @@ public class UriTemplateBuildTest {
 
     @Test
     public void shouldBuildWithPathMatrixPath() {
-        UriPath path = http.absolutePath("path").matrix("key", "value").parsePath("path2");
+        UriPath path = http.absolutePath("path").matrix("key", "value").path("path2");
 
         assertEquals("http:/path;key=value/path2", path.toString());
         assertEquals("/path;key=value/path2", path.get());

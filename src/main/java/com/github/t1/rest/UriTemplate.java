@@ -147,13 +147,14 @@ public abstract class UriTemplate {
             if (path == null)
                 return this;
             String[] split = path.split("\\?", 2);
-            NonQuery nonQuery = parsePath(split[0]);
+            NonQuery nonQuery = path(split[0]);
             if (split.length == 2)
                 return nonQuery.queryAndMore(split[1]);
             return nonQuery;
         }
 
-        protected NonQuery parsePath(String path) {
+        @Override
+        public NonQuery path(String path) {
             boolean isAbsolute = path.startsWith("/");
             if (isAbsolute)
                 path = path.substring(1);
@@ -188,7 +189,8 @@ public abstract class UriTemplate {
             return path;
         }
 
-        public UriPath parsePath(String path) {
+        @Override
+        public UriPath path(String path) {
             return path(split(path));
         }
 
@@ -321,6 +323,8 @@ public abstract class UriTemplate {
         private NonQuery(UriTemplate previous) {
             super(previous);
         }
+
+        public abstract NonQuery path(String path);
 
         protected NonFragment queryAndMore(String string) {
             List<String> split = asList(string.split("&"));

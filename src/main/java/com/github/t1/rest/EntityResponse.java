@@ -1,7 +1,5 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-
 import java.io.InputStream;
 
 import javax.ws.rs.core.Response.StatusType;
@@ -25,7 +23,6 @@ public class EntityResponse<T> extends RestResponse {
     }
 
     public T get() {
-        expecting(OK);
         return converter.convert(inputStream, headers());
     }
 

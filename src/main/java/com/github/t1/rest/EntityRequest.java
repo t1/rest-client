@@ -1,5 +1,7 @@
 package com.github.t1.rest;
 
+import static javax.ws.rs.core.Response.Status.*;
+
 import lombok.*;
 
 @Value
@@ -22,11 +24,20 @@ public class EntityRequest<T> extends RestRequest {
         return new EntityRequest<>(resource.with(name, value), headers.with(name, value), converter);
     }
 
-    public T get() {
-        return getResponse().get();
+    /**
+     * Execute a http GET and return the body of that type,
+     * {@link RestResponse#expecting(javax.ws.rs.core.Response.StatusType...) expecting}
+     * {@link javax.ws.rs.core.Response.Status#OK OK}
+     */
+    public T GET() {
+        return GET_Response().expecting(OK).get();
     }
 
-    public EntityResponse<T> getResponse() {
+    /**
+     * Execute a GET and return the {@link EntityResponse response object}. This method name is better than getResponse
+     * (as it indicates that a GET is executed), and anything else I could think of.
+     */
+    public EntityResponse<T> GET_Response() {
         GetRequest<T> request = config().createGetRequest(uri(), headers, converter);
         return request.execute();
     }

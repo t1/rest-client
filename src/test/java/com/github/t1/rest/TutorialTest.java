@@ -1,47 +1,106 @@
 package com.github.t1.rest;
 
+import static javax.ws.rs.core.Response.Status.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
+
+import java.net.URI;
+import java.util.*;
 
 import org.junit.*;
 
-import lombok.*;
+import lombok.Data;
 
+@Ignore("requires internet connection")
 public class TutorialTest {
-    @Rule
-    public final RestClientMockRule service = new RestClientMockRule();
+    private static final URI BASE = URI.create("http://httpbin.org");
 
+
+    @Test
+    public void GET_as_String() {
+        String body = new RestResource(BASE + "/get?foo=bar").GET();
+
+        assertThat(body.replace('\"', '\'').replaceAll("\\s", "")) //
+                .matches(".*'args':\\{'foo':'bar'\\}.*") //
+                .matches(".*'url':'" + BASE + "/get\\?foo=bar'.*");
+    }
+
+    /** the body returned by http://httpbin.org/get */
     @Data
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class Pojo {
-        String key, value;
+    public static class HttpBinGetResponse {
+        Map<String, String> args;
+        String url;
+
+        public HttpBinGetResponse url(String url) {
+            this.url = url;
+            return this;
+        }
+
+        public HttpBinGetResponse arg(String key, String value) {
+            if (args == null)
+                args = new LinkedHashMap<>();
+            args.put(key, value);
+            return this;
+        }
     }
 
     @Test
-    public void testGetString() {
-        service.on("http://example.org/string").reply("value");
+    public void GET_as_pojo() {
+        HttpBinGetResponse pojo = new RestResource(BASE + "/get?foo=bar").GET(HttpBinGetResponse.class);
 
-        String value = new RestResource("http://example.org/string").get(String.class);
-
-        assertEquals("value", value);
+        assertEquals("bar", pojo.args.get("foo"));
+        assertEquals(BASE + "/get?foo=bar", pojo.url);
     }
 
     @Test
-    public void testGetInt() {
-        service.on("http://example.org/int").reply(123);
+    public void register_resource_and_GET() {
+        // In the examples above, we used the default config, but you can't deregister, so we use a dedicated config
+        RestConfig rest = new RestConfig().register("httpbin", BASE + "/get");
 
-        int value = new RestResource("http://example.org/int").get(int.class);
+        HttpBinGetResponse pojo = rest.resource("httpbin").GET(HttpBinGetResponse.class);
 
-        assertEquals(123, value);
+        assertEquals(BASE + "/get", pojo.url);
     }
 
     @Test
-    public void testGetPojo() {
-        service.on("http://example.org/pojo").reply(new Pojo("k", "v"));
+    public void build_registry_and_add_path_and_GET() {
+        RestConfig rest = new RestConfig() //
+                .register("google", "http://google.com") //
+                .register("httpbin", BASE) //
+                .register("apple", "http://apple.com") //
+                ;
 
-        Pojo value = new RestResource("http://example.org/pojo").get(Pojo.class);
+        HttpBinGetResponse pojo = rest.resource("httpbin", "/get").GET(HttpBinGetResponse.class);
 
-        assertEquals("k", value.getKey());
-        assertEquals("v", value.getValue());
+        assertEquals(BASE + "/get", pojo.url);
+    }
+
+    @Test
+    public void GET_response_object_with_status() {
+        RestConfig rest = new RestConfig().register("httpbin", BASE + "/basic-auth/foo/bar");
+
+        EntityResponse<String> response = rest.resource("httpbin").GET_Response(String.class);
+
+        assertEquals(UNAUTHORIZED, response.status());
+        assertEquals("", response.get());
+    }
+
+    /** the body returned by a successful http://httpbin.org/basic-auth */
+    @Data
+    private static class AuthenticatedPage {
+        boolean authenticated;
+        String user;
+    }
+
+    @Test
+    public void GET_with_basic_auth() {
+        RestConfig rest = new RestConfig() //
+                .register("httpbin", BASE + "/basic-auth/foo/bar") //
+                .put(BASE, new Credentials("foo", "bar"));
+
+        AuthenticatedPage page = rest.resource("httpbin").GET(AuthenticatedPage.class);
+
+        assertTrue("authenticated", page.authenticated);
+        assertEquals("foo", page.user);
     }
 }

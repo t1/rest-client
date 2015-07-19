@@ -10,6 +10,7 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
+import com.github.t1.rest.UriTemplate.NonQuery;
 import com.github.t1.rest.fallback.*;
 
 import lombok.*;
@@ -18,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Holds the configuration that applies to a set of {@link RestResource}s:
  * <ul>
- * <li>The {@link ResourceFactory} to create the base uris for {@link RestResource}</li>
+ * <li>The {@link RestResourceRegistry} to create the base uris for {@link RestResource}</li>
  * <li>The credentials to use by base uri</li>
  * <li>The {@link RequestFactory} to create requests</li>
  * <li>The readers to convert bodies from their {@link MediaType} to the target object</li>
@@ -29,14 +30,14 @@ import lombok.extern.slf4j.Slf4j;
 public class RestConfig {
     public static final RestConfig DEFAULT_CONFIG = new RestConfig();
 
-    private final List<ResourceFactory> resourceFactories = new ArrayList<>();
+    private RestResourceRegistry uriRegistry = null;
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
     @Getter
     @Setter
     private RequestFactory requestFactory = new RequestFactory();
 
     @Inject
-    Instance<ResourceFactory> resourceFactoryInstances;
+    private Instance<RestResourceRegistry> uriRegistryInstances;
 
     private final Map<URI, Credentials> credentials = new LinkedHashMap<>();
 
@@ -55,23 +56,67 @@ public class RestConfig {
 
     @PostConstruct
     void postConstruct() {
-        for (ResourceFactory factory : resourceFactoryInstances) {
-            add(factory);
+        for (RestResourceRegistry registry : uriRegistryInstances) {
+            add(registry);
         }
     }
 
-    public RestConfig add(ResourceFactory resourceFactory) {
-        this.resourceFactories.add(resourceFactory);
+    public RestConfig add(RestResourceRegistry uriRegistry) {
+        if (this.uriRegistry == null)
+            this.uriRegistry = uriRegistry;
+        else
+            this.uriRegistry = new CombinedRestResourceRegistry(uriRegistry, this.uriRegistry);
         return this;
     }
 
-    public RestResource resource(String name) {
-        for (ResourceFactory resourceFactory : resourceFactories) {
-            RestResource resource = resourceFactory.forName(name);
-            if (resource != null)
-                return resource;
-        }
-        throw new IllegalStateException("no uri factory for resource named '" + name + "'");
+    public RestConfig register(String alias, String uri) {
+        return register(alias, UriTemplate.fromString(uri));
+    }
+
+    public RestConfig register(String alias, URI uri) {
+        return register(alias, UriTemplate.from(uri));
+    }
+
+    public RestConfig register(String alias, UriTemplate uri) {
+        return register(alias, resource(uri));
+    }
+
+    public RestConfig register(String alias, RestResource resource) {
+        this.uriRegistry = new StaticRestResourceRegistry(alias, resource, this.uriRegistry);
+        return this;
+    }
+
+    public RestResource resource(String alias, String... path) {
+        UriTemplate uri = uri(alias);
+        if (path.length == 0)
+            return resource(uri);
+        return resource(nonQueryUri(alias), path);
+    }
+
+    public UriTemplate uri(String alias) {
+        if (uriRegistry == null)
+            throw new IllegalStateException("no uris registered when looking for alias " + alias);
+        RestResource resource = uriRegistry.get(alias);
+        if (resource == null)
+            throw new IllegalStateException("no uri registered for resource " + alias);
+        return resource.uri();
+    }
+
+    public NonQuery nonQueryUri(String alias) {
+        UriTemplate uri = uri(alias);
+        if (!(uri instanceof NonQuery))
+            throw new IllegalArgumentException("not a non-query uri alias " + alias + ": " + uri);
+        return (NonQuery) uri;
+    }
+
+    public RestResource resource(NonQuery uri, String... path) {
+        for (String item : path)
+            uri = uri.path(item);
+        return resource(uri);
+    }
+
+    public RestResource resource(UriTemplate uri) {
+        return new RestResource(this, uri);
     }
 
     public <T> ResponseConverter<T> converterFor(Class<T> type) {
@@ -101,13 +146,13 @@ public class RestConfig {
      */
     @Deprecated
     public <T> ResponseConverter<T> converterFor(Class<T> type, MediaType contentType) {
-        ResponseConverter<T> out = new ResponseConverter<>(type);
-        for (MessageBodyReader<T> bean : this.<T> readers()) {
-            out.addIfReadable(bean, contentType);
+        ResponseConverter<T> converter = new ResponseConverter<>(type);
+        for (MessageBodyReader<T> reader : this.<T> readers()) {
+            converter.addIfReadable(reader, contentType);
         }
-        if (out.mediaTypes().isEmpty())
+        if (converter.mediaTypes().isEmpty())
             throw new IllegalArgumentException("no MessageBodyReader found for " + type);
-        return out;
+        return converter;
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
@@ -157,5 +202,10 @@ public class RestConfig {
         assert string.endsWith(toBeRemoved) : "uri should end with " + toBeRemoved + " but was " + uri;
         string = string.substring(0, string.length() - toBeRemoved.length());
         return URI.create(string);
+    }
+
+    @Override
+    public String toString() {
+        return "config" + ((uriRegistry == null) ? "(no aliases)" : "(" + uriRegistry.names() + ")");
     }
 }
