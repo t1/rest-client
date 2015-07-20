@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
  * Holds the java type that should be converted to and the converters to do the actual conversion for some content type
  * returned by the http request.
  * <p/>
- * Important: The {@link #convert(InputStream, Headers)} method <b>closes</b> the stream with one exception: Iff the
+ * Important: The {@link #convert(InputStream, Headers, Closeable)} method <b>closes</b> the stream with one exception: Iff the
  * java type is {@link Closeable} (like an {@link InputStream}) and no exception occurs, the stream is left open.
  */
 @Slf4j
@@ -78,7 +78,7 @@ public class ResponseConverter<T> {
         return vendorTypeValue;
     }
 
-    public T convert(InputStream entityStream, Headers headers) {
+    public T convert(InputStream entityStream, Headers headers, Closeable closer) {
         try {
             MediaType mediaType = headers.contentType();
             MessageBodyReader<T> reader = converterFor(mediaType);
@@ -89,7 +89,7 @@ public class ResponseConverter<T> {
             return out;
         } catch (Exception e) {
             try {
-                entityStream.close();
+                closer.close();
             } catch (IOException f) {
                 e.addSuppressed(f);
             }

@@ -5,11 +5,11 @@ import java.net.URI;
 
 import javax.ws.rs.core.Response.StatusType;
 
+import lombok.SneakyThrows;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.*;
 import org.apache.http.impl.client.CloseableHttpClient;
-
-import lombok.SneakyThrows;
 
 class RestGetCall<T> extends RestCall {
     private final ResponseConverter<T> converter;
@@ -34,6 +34,6 @@ class RestGetCall<T> extends RestCall {
         StatusType status = status(apacheResponse);
         HttpEntity entity = apacheResponse.getEntity();
         InputStream responseStream = (entity == null) ? null : entity.getContent();
-        return new EntityResponse<>(config(), status, responseHeaders, converter, responseStream);
+        return new EntityResponse<>(config(), status, responseHeaders, converter, responseStream, apacheResponse);
     }
 }

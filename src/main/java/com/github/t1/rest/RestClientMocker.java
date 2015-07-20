@@ -8,13 +8,13 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.Status;
+
+import lombok.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.t1.rest.fallback.JsonMessageBodyReader;
-
-import lombok.*;
 
 public class RestClientMocker {
     @RequiredArgsConstructor
@@ -59,7 +59,7 @@ public class RestClientMocker {
                 }
 
                 private EntityResponse<T> response(Status status, InputStream inputStream) {
-                    return new EntityResponse<>(config, status, new Headers(), converter, inputStream);
+                    return new EntityResponse<>(config, status, new Headers(), converter, inputStream, inputStream);
                 }
 
                 @SneakyThrows(JsonProcessingException.class)
@@ -128,8 +128,8 @@ public class RestClientMocker {
 
     public ResourceMock on(UriTemplate uri) {
         if (!setup)
-            throw new RuntimeException(
-                    RestClientMocker.class.getSimpleName() + " not properly set up: call #before() and #after()!");
+            throw new RuntimeException(RestClientMocker.class.getSimpleName()
+                    + " not properly set up: call #before() and #after()!");
         return new ResourceMock(uri);
     }
 }

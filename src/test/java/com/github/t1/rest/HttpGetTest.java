@@ -9,6 +9,7 @@ import static javax.ws.rs.core.Response.Status.*;
 import static javax.ws.rs.core.Response.Status.Family.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
 
 import java.io.InputStream;
 
@@ -18,16 +19,16 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
 
+import lombok.*;
+
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
-import com.github.t1.rest.fallback.ConverterTools;
-
 import ch.qos.logback.classic.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
-import lombok.*;
+
+import com.github.t1.rest.fallback.ConverterTools;
 
 @RunWith(CdiRunner.class)
 public class HttpGetTest {
@@ -170,8 +171,8 @@ public class HttpGetTest {
     }
 
     @ClassRule
-    public static final DropwizardClientRule service =
-            new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
+    public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
+            new YamlMessageBodyWriter());
 
     @javax.enterprise.inject.Produces
     RestResourceRegistry testResource() {
@@ -192,16 +193,16 @@ public class HttpGetTest {
         setLogLevel("com.github.t1.rest", DEBUG);
     }
 
+    private void setLogLevel(String loggerName, Level level) {
+        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
+    }
+
     private RestResource base(String... path) {
         return rest.resource("test", path);
     }
 
     private RestResource base() {
         return rest.resource("test");
-    }
-
-    private void setLogLevel(String loggerName, Level level) {
-        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
     }
 
     @SuppressWarnings("deprecation")
@@ -397,20 +398,20 @@ public class HttpGetTest {
                 .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
 
         EntityResponse<?> barResponse = request.with("path", "barpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
-                barResponse.contentType().toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json", barResponse.contentType()
+                .toString());
         BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
         EntityResponse<?> bazResponse = request.with("path", "bazpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json",
-                bazResponse.contentType().toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json", bazResponse.contentType()
+                .toString());
         BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
         EntityResponse<?> bongResponse = request.with("path", "bongpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json",
-                bongResponse.contentType().toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json", bongResponse
+                .contentType().toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
     }
