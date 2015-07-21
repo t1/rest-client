@@ -107,7 +107,8 @@ public class HeadersTest {
         assertEquals("Two: 2", i.next().toString());
         assertFalse(i.hasNext());
         assertEquals("One, Two", headers.getHeaderNames());
-        assertEquals("One: true | Two: 2", headers.toString());
+        assertEquals("One: true & Two: 2", headers.toString());
+        assertEquals("  One: true\n  Two: 2\n", headers.toListString());
 
         assertEquals("true", headers.get("One"));
         assertEquals("true", headers.get("one"));
@@ -129,7 +130,8 @@ public class HeadersTest {
         assertEquals("Three: 3.0", i.next().toString());
         assertFalse(i.hasNext());
         assertEquals("One, Two, Three", headers.getHeaderNames());
-        assertEquals("One: true | Two: 2 | Three: 3.0", headers.toString());
+        assertEquals("One: true & Two: 2 & Three: 3.0", headers.toString());
+        assertEquals("  One: true\n  Two: 2\n  Three: 3.0\n", headers.toListString());
 
         assertEquals("true", headers.get("One"));
         assertEquals("2", headers.get("Two"));
@@ -190,10 +192,9 @@ public class HeadersTest {
         assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", headers.toString());
 
         assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.get("Accept"));
-        assertEquals(
-                asList( //
-                        MediaType.valueOf("application/json;q=1.0"), //
-                        MediaType.valueOf("text/html;charset=utf-8")), //
+        assertEquals(asList( //
+                MediaType.valueOf("application/json;q=1.0"), //
+                MediaType.valueOf("text/html;charset=utf-8")), //
                 headers.accept());
     }
 

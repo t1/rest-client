@@ -8,13 +8,12 @@ import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
 import java.util.*;
-import java.util.ArrayList;
 
 import javax.ws.rs.core.*;
 
-import com.github.t1.rest.Headers.Header;
-
 import lombok.*;
+
+import com.github.t1.rest.Headers.Header;
 
 @Value
 @Getter(NONE)
@@ -144,11 +143,19 @@ public class Headers implements Iterable<Header> {
         StringBuilder out = new StringBuilder();
         for (Header header : this) {
             if (out.length() > 0)
-                out.append(" | ");
+                out.append(" & ");
             out.append(header);
         }
         return out.toString();
     }
+
+    public String toListString() {
+        StringBuilder out = new StringBuilder();
+        for (Header header : this)
+            out.append("  ").append(header).append("\n");
+        return out.toString();
+    }
+
 
     public Headers with(String name, String value) {
         Headers out = new Headers();

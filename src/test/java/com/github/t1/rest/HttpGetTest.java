@@ -8,6 +8,7 @@ import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static javax.ws.rs.core.Response.Status.Family.*;
 import static lombok.AccessLevel.*;
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 
@@ -447,7 +448,7 @@ public class HttpGetTest {
         } catch (UnexpectedStatusException e) {
             assertEquals(NO_CONTENT, e.actual());
             assertEquals(asList(OK), e.expected());
-            assertEquals("expected status 200 OK but got 204 No Content", e.getMessage());
+            assertThat(e.getMessage(), containsString("expected status 200 OK but got 204 No Content"));
         }
     }
 
