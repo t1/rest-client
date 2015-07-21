@@ -4,7 +4,7 @@ import static com.github.t1.rest.VendorType.*;
 import static java.util.Locale.*;
 import static javax.ws.rs.core.MediaType.*;
 
-import java.io.*;
+import java.io.InputStream;
 import java.util.*;
 
 import javax.ws.rs.Consumes;
@@ -17,9 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Holds the java type that should be converted to and the converters to do the actual conversion for some content type
  * returned by the http request.
- * <p/>
- * Important: The {@link #convert(InputStream, Headers, Closeable)} method <b>closes</b> the stream with one exception: Iff the
- * java type is {@link Closeable} (like an {@link InputStream}) and no exception occurs, the stream is left open.
  */
 @Slf4j
 @Getter
@@ -78,21 +75,14 @@ public class ResponseConverter<T> {
         return vendorTypeValue;
     }
 
-    public T convert(InputStream entityStream, Headers headers, Closeable closer) {
+    public T convert(InputStream entityStream, Headers headers) {
         try {
             MediaType mediaType = headers.contentType();
             MessageBodyReader<T> reader = converterFor(mediaType);
             MultivaluedMap<String, String> headerMap = headers.toMultiValuedMap();
             T out = reader.readFrom(acceptedType, acceptedType, null, mediaType, headerMap, entityStream);
-            if (shouldClose())
-                entityStream.close();
             return out;
         } catch (Exception e) {
-            try {
-                closer.close();
-            } catch (IOException f) {
-                e.addSuppressed(f);
-            }
             throw new RuntimeException("can't read: " + e.getMessage(), e);
         }
     }
@@ -119,10 +109,5 @@ public class ResponseConverter<T> {
     public String toString() {
         return "Converter " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) //
                 + ": " + readers.keySet();
-    }
-
-    /** iff the type to convert to is {@link Closeable}, the client has to do so in order to close the stream */
-    public boolean shouldClose() {
-        return !Closeable.class.isAssignableFrom(acceptedType);
     }
 }

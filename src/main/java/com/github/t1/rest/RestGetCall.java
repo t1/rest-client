@@ -1,5 +1,7 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.fallback.ByteArrayMessageBodyReader.*;
+
 import java.io.*;
 import java.net.URI;
 
@@ -27,13 +29,19 @@ class RestGetCall<T> extends RestCall {
     }
 
     @Override
-    @SuppressWarnings("resource")
     @SneakyThrows(IOException.class)
     protected EntityResponse<T> convert(CloseableHttpResponse apacheResponse) {
         Headers responseHeaders = convert(apacheResponse.getAllHeaders());
         StatusType status = status(apacheResponse);
         HttpEntity entity = apacheResponse.getEntity();
-        InputStream responseStream = (entity == null) ? null : entity.getContent();
-        return new EntityResponse<>(config(), status, responseHeaders, converter, responseStream, apacheResponse);
+        InputStream responseStream = bufferedStream(entity);
+        return new EntityResponse<>(config(), status, responseHeaders, converter, responseStream);
+    }
+
+    private InputStream bufferedStream(HttpEntity entity) throws IOException {
+        if (entity == null)
+            return null;
+        byte[] buffer = readAll(entity.getContent());
+        return new ByteArrayInputStream(buffer);
     }
 }

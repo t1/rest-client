@@ -59,7 +59,7 @@ public class RestClientMocker {
                 }
 
                 private EntityResponse<T> response(Status status, InputStream inputStream) {
-                    return new EntityResponse<>(config, status, new Headers(), converter, inputStream, inputStream);
+                    return new EntityResponse<>(config, status, new Headers(), converter, inputStream);
                 }
 
                 @SneakyThrows(JsonProcessingException.class)

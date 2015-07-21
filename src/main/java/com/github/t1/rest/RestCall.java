@@ -3,16 +3,17 @@ package com.github.t1.rest;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 
-import javax.ws.rs.core.Response.*;
+import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.Response.Status.Family;
-
-import org.apache.http.client.methods.*;
-import org.apache.http.conn.ConnectTimeoutException;
-import org.apache.http.impl.client.CloseableHttpClient;
+import javax.ws.rs.core.Response.StatusType;
 
 import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+
+import org.apache.http.client.methods.*;
+import org.apache.http.conn.ConnectTimeoutException;
+import org.apache.http.impl.client.CloseableHttpClient;
 
 @Slf4j
 abstract class RestCall {
@@ -39,14 +40,12 @@ abstract class RestCall {
     @Getter
     private final Headers requestHeaders;
 
-    public RestCall(RestConfig config, CloseableHttpClient apacheClient, HttpRequestBase request,
-            Headers requestHeaders) {
+    public RestCall(RestConfig config, CloseableHttpClient apacheClient, HttpRequestBase request, Headers requestHeaders) {
         this.config = config;
         this.apacheClient = apacheClient;
         this.request = request;
         this.requestHeaders = requestHeaders;
         addRequestHeaders(requestHeaders);
-        // request.setConfig(config);
     }
 
     private void addRequestHeaders(Headers requestHeaders) {
@@ -55,23 +54,15 @@ abstract class RestCall {
         }
     }
 
-    /** The {@link RestResponse}/{@link EntityResponse} is responsible to close the input stream */
-    // if converting fails, the connection has to be closed, but not when it can be passed to the EntityResponse
-    @SuppressWarnings("resource")
     public RestResponse execute() {
         log.debug("execute {}", request);
-        CloseableHttpResponse apacheResponse = null;
-        try {
-            apacheResponse = apacheClient.execute(request);
+        try (CloseableHttpResponse apacheResponse = apacheClient.execute(request)) {
             return convert(apacheResponse);
         } catch (ConnectTimeoutException | SocketTimeoutException e) {
-            close(apacheResponse, e);
             throw new HttpTimeoutException("can't execute " + request, e);
         } catch (IOException e) {
-            close(apacheResponse, e);
             throw new RuntimeException("can't execute " + request, e);
         } catch (RuntimeException e) {
-            close(apacheResponse, e);
             throw e;
         }
     }
@@ -91,15 +82,5 @@ abstract class RestCall {
         if (status == null)
             status = new UnknownStatus(code);
         return status;
-    }
-
-    private void close(CloseableHttpResponse apacheResponse, Exception e) {
-        if (apacheResponse != null) {
-            try {
-                apacheResponse.close();
-            } catch (Exception e2) {
-                e.addSuppressed(e2);
-            }
-        }
     }
 }

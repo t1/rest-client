@@ -175,6 +175,11 @@ public class HttpGetTest {
     public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
             new YamlMessageBodyWriter());
 
+    @Rule
+    public ApacheConfigRule apacheConfig() {
+        return new ApacheConfigRule();
+    }
+
     @javax.enterprise.inject.Produces
     RestResourceRegistry testResource() {
         return new StaticRestResourceRegistry("test", new RestResource(service.baseUri()));
@@ -240,7 +245,7 @@ public class HttpGetTest {
         EntityResponse<String> response = base("ping").accept(String.class).GET_Response();
 
         assertEquals("pong", response.get());
-        assertEquals("1.1 localhost (Apache-HttpClient/4.5 (cache))", response.header("Via").value());
+        assertEquals("4", response.header("Content-Length").value());
         assertEquals(TEXT_PLAIN_TYPE, response.contentType());
         assertEquals((Integer) 4, response.contentLength());
     }

@@ -8,16 +8,12 @@ import static org.junit.Assert.*;
 import static org.junit.Assume.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 
-import java.io.InputStream;
-import java.lang.reflect.Field;
-
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
 import lombok.Data;
 
 import org.apache.http.client.config.RequestConfig;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.junit.*;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +23,9 @@ import com.fasterxml.jackson.core.JsonParseException;
 
 public class ApacheClientTest {
     /** some of these tests are slow by design... too slow for regular unit tests. And they require an Internet connection */
-    private static final boolean EXECUTE_REMOTE_INTEGRATION_TESTS = false;
+    private static final boolean EXECUTE_SLOW_TESTS = false;
+
+    private static byte[] STREAM;
 
     @Data
     public static class Pojo {
@@ -43,6 +41,12 @@ public class ApacheClientTest {
         }
 
         @GET
+        @Path("/delay")
+        public void delay() throws InterruptedException {
+            Thread.sleep(10 * 1000);
+        }
+
+        @GET
         @Path("/pojo")
         @Produces(APPLICATION_JSON)
         public String pojo() {
@@ -52,28 +56,15 @@ public class ApacheClientTest {
         @GET
         @Path("/stream")
         @Produces(APPLICATION_OCTET_STREAM)
-        public String stream() {
-            return "invalid";
+        public byte[] stream() {
+            if (STREAM == null)
+                STREAM = new byte[12 * 1024 * 1024];
+            return STREAM;
         }
     }
 
     @ClassRule
     public static final DropwizardClientRule service = new DropwizardClientRule(new MockService());
-
-    @Before
-    public void verifyNoOpenConnectionsBefore() {
-        assertEquals(0, getTotalConnections());
-    }
-
-    @After
-    public void verifyNoOpenConnectionsAfter() {
-        assertEquals(0, getTotalConnections());
-    }
-
-    private int getTotalConnections() {
-        return getInternalHttpClientField(PoolingHttpClientConnectionManager.class, "connManager").getTotalStats()
-                .getLeased();
-    }
 
     @Before
     public void before() {
@@ -85,34 +76,16 @@ public class ApacheClientTest {
         ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
     }
 
+    @Rule
+    public final ApacheConfigRule apacheRule = new ApacheConfigRule();
+
     private RestResource pojoResource() {
         return new RestResource(service.baseUri() + "/pojo");
     }
 
-    private RequestConfig getRequestConfig() {
-        return getInternalHttpClientField(RequestConfig.class, "defaultConfig");
-    }
-
-    private <T> T getInternalHttpClientField(Class<T> type, String name) {
-        Object internalHttpClient = getField(null, RestCallFactory.class.getName(), "CLIENT");
-        Object result = getField(internalHttpClient, "org.apache.http.impl.client.InternalHttpClient", name);
-        return type.cast(result);
-    }
-
-    private Object getField(Object object, String className, String fieldName) {
-        try {
-            Class<?> type = Class.forName(className);
-            Field connManagerField = type.getDeclaredField(fieldName);
-            connManagerField.setAccessible(true);
-            return connManagerField.get(object);
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Test
     public void shouldConfigureTimeouts() {
-        RequestConfig config = getRequestConfig();
+        RequestConfig config = apacheRule.getRequestConfig();
 
         assertEquals("connection request timeout", 1, config.getConnectionRequestTimeout());
         assertEquals("connect timeout", 1000, config.getConnectTimeout());
@@ -121,13 +94,13 @@ public class ApacheClientTest {
 
     @Test(expected = HttpTimeoutException.class)
     public void shouldTimeout() {
-        assumeTrue(EXECUTE_REMOTE_INTEGRATION_TESTS);
-        new RestResource("http://httpbin.org/delay/10").GET(String.class);
+        assumeTrue(EXECUTE_SLOW_TESTS);
+        new RestResource(service.baseUri() + "/delay").GET(String.class);
     }
 
     @Test
     public void shouldConfigureConnectionPool() {
-        RequestConfig config = getRequestConfig();
+        RequestConfig config = apacheRule.getRequestConfig();
 
         assertEquals("socket timeout", 5000, config.getSocketTimeout());
     }
@@ -175,13 +148,12 @@ public class ApacheClientTest {
     }
 
     @Test
-    @SuppressWarnings("deprecation")
-    public void shouldNotCloseConnectionWhenResultIsCloseable() throws Exception {
-        assumeTrue(EXECUTE_REMOTE_INTEGRATION_TESTS);
-        RestResource resource = new RestResource("http://httpbin.org/stream-bytes/" + 1024 * 1024);
-        EntityRequest<InputStream> request = resource.accept(InputStream.class, APPLICATION_OCTET_STREAM_TYPE);
-        try (InputStream stream = request.GET()) {
-            assertEquals(1, getTotalConnections());
-        }
+    public void shouldReadBigStream() {
+        @SuppressWarnings("deprecation")
+        byte[] buffer = new RestResource(service.baseUri() + "/stream") //
+                .accept(byte[].class, APPLICATION_OCTET_STREAM_TYPE) //
+                .GET();
+
+        assertArrayEquals(STREAM, buffer);
     }
 }

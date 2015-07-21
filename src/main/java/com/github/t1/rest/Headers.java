@@ -25,10 +25,6 @@ public class Headers implements Iterable<Header> {
 
     private static final String WHITESPACE = "\\s*";
 
-    static List<String> toMultiValue(String value) {
-        return asList(value.split(WHITESPACE + "," + WHITESPACE));
-    }
-
     @Value
     public static class Header {
         String name, value;
@@ -54,7 +50,7 @@ public class Headers implements Iterable<Header> {
         }
 
         public List<String> multiValue() {
-            return toMultiValue(value);
+            return asList(value.split(WHITESPACE + "," + WHITESPACE));
         }
     }
 
@@ -89,6 +85,8 @@ public class Headers implements Iterable<Header> {
     }
 
     public Headers header(String name, Object value) {
+        if ("Via".equals(name)) // FIXME proper multi-header handling
+            return this;
         return new Headers(new Header(name, value.toString()), this);
     }
 

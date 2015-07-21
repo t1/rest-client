@@ -1,7 +1,6 @@
 package com.github.t1.rest;
 
 import java.net.URI;
-import java.nio.file.*;
 import java.util.*;
 
 import javax.annotation.PostConstruct;
@@ -10,38 +9,45 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import com.github.t1.rest.UriTemplate.NonQuery;
-import com.github.t1.rest.fallback.*;
-
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+
+import com.github.t1.rest.UriTemplate.NonQuery;
+import com.github.t1.rest.fallback.*;
 
 /**
  * Holds the configuration that applies to a set of {@link RestResource}s:
  * <ul>
- * <li>The {@link RestResourceRegistry} to create the base uris for {@link RestResource}</li>
- * <li>The credentials to use by base uri</li>
+ * <li>The {@link RestResource resources} and {@link RestResourceRegistry resource registries} to lookup resources by alias</li>
+ * <li>The {@link Credentials} and {@link CredentialsRegistry credential registries} to lookup by base uri</li>
  * <li>The {@link RestCallFactory} to create requests</li>
  * <li>The readers to convert bodies from their {@link MediaType} to the target object</li>
  * </ul>
- * For most applications, one of these is enough, so there's a default singleton: #DEFAULT_CONFIG}.
+ * For most applications, one of these is enough, so there's a default config: {@link #DEFAULT_CONFIG}.
+ * 
+ * FIXME make config immutable
  */
 @Slf4j
 public class RestConfig {
     public static final RestConfig DEFAULT_CONFIG = new RestConfig();
 
-    private RestResourceRegistry uriRegistry = null;
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
+
     @Getter
     @Setter
     private RestCallFactory requestFactory = new RestCallFactory();
 
+    private RestResourceRegistry uriRegistry = null;
     @Inject
     private Instance<RestResourceRegistry> uriRegistryInstances;
 
-    private final Map<URI, Credentials> credentials = new LinkedHashMap<>();
+    private CredentialsRegistry credentialsRegistry = null;
+
+    @Inject
+    private Instance<CredentialsRegistry> credentialsRegistryInstances;
 
     public RestConfig() {
+        add(new ByteArrayMessageBodyReader());
         add(new InputStreamMessageBodyReader());
         add(new JsonMessageBodyReader());
         add(new StringMessageBodyReader());
@@ -55,9 +61,12 @@ public class RestConfig {
     }
 
     @PostConstruct
-    void postConstruct() {
+    void loadRegistries() {
         for (RestResourceRegistry registry : uriRegistryInstances) {
             add(registry);
+        }
+        for (CredentialsRegistry credentialsRegistry : credentialsRegistryInstances) {
+            add(credentialsRegistry);
         }
     }
 
@@ -78,7 +87,7 @@ public class RestConfig {
     }
 
     public RestConfig register(String alias, UriTemplate uri) {
-        return register(alias, resource(uri));
+        return register(alias, createResource(uri));
     }
 
     public RestConfig register(String alias, RestResource resource) {
@@ -89,8 +98,8 @@ public class RestConfig {
     public RestResource resource(String alias, String... path) {
         UriTemplate uri = uri(alias);
         if (path.length == 0)
-            return resource(uri);
-        return resource(nonQueryUri(alias), path);
+            return createResource(uri);
+        return createResource(nonQueryUri(alias), path);
     }
 
     public UriTemplate uri(String alias) {
@@ -109,19 +118,43 @@ public class RestConfig {
         return (NonQuery) uri;
     }
 
-    public RestResource resource(URI uri) {
-        return resource(UriTemplate.from(uri));
+    public RestResource createResource(URI uri) {
+        return createResource(UriTemplate.from(uri));
     }
 
-    public RestResource resource(NonQuery uri, String... path) {
+    public RestResource createResource(NonQuery uri, String... path) {
         for (String item : path)
             uri = uri.path(item);
-        return resource(uri);
+        return createResource(uri);
     }
 
-    public RestResource resource(UriTemplate uri) {
+    public RestResource createResource(UriTemplate uri) {
         return new RestResource(this, uri);
     }
+
+
+    public RestConfig add(CredentialsRegistry credentialsRegistry) {
+        if (this.credentialsRegistry == null)
+            this.credentialsRegistry = credentialsRegistry;
+        else
+            this.credentialsRegistry = new CombinedCredentialsRegistry(credentialsRegistry, this.credentialsRegistry);
+        return this;
+    }
+
+    public RestConfig put(URI uri, Credentials credentials) {
+        this.credentialsRegistry = new StaticCredentialsRegistry(uri, credentials, credentialsRegistry);
+        return this;
+    }
+
+    public Credentials getCredentials(URI uri) {
+        Credentials credentials = (credentialsRegistry == null) ? null : credentialsRegistry.lookup(uri);
+        if (credentials == null)
+            log.debug("found no credentials for {}", uri);
+        else
+            log.debug("found credentials for {}", uri);
+        return credentials;
+    }
+
 
     public <T> ResponseConverter<T> converterFor(Class<T> type) {
         ResponseConverter<T> result = new ResponseConverter<>(type);
@@ -169,43 +202,6 @@ public class RestConfig {
         if (credentials != null)
             headers = headers.basicAuth(credentials);
         return requestFactory.createRestGetCall(this, uri, headers, converter);
-    }
-
-    public RestConfig put(URI baseUri, Credentials credentials) {
-        this.credentials.put(baseUri, credentials);
-        return this;
-    }
-
-    public Credentials getCredentials(URI uriIn) {
-        URI uri = uriIn;
-        while (true) {
-            Credentials result = credentials.get(uri);
-            if (result != null) {
-                log.debug("found credentials for {}", uri);
-                return result;
-            } else if (uri.getFragment() != null) {
-                uri = removeTrailing(uri, "#" + uri.getFragment());
-            } else if (uri.getQuery() != null) {
-                uri = removeTrailing(uri, "?" + uri.getQuery());
-            } else if (uri.toString().endsWith("/")) {
-                uri = removeTrailing(uri, "/");
-            } else if (uri.getPath() != null && !uri.getPath().isEmpty()) {
-                Path path = Paths.get(uri.getPath());
-                path = path.getName(path.getNameCount() - 1);
-                uri = removeTrailing(uri, "/" + path);
-            } else {
-                break;
-            }
-        }
-        log.debug("found no credentials for {}", uriIn);
-        return null;
-    }
-
-    private URI removeTrailing(URI uri, String toBeRemoved) {
-        String string = uri.toString();
-        assert string.endsWith(toBeRemoved) : "uri should end with " + toBeRemoved + " but was " + uri;
-        string = string.substring(0, string.length() - toBeRemoved.length());
-        return URI.create(string);
     }
 
     @Override
