@@ -198,6 +198,10 @@ public class HttpGetTest {
         ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
     }
 
+    private void givenCredentials() {
+        rest.put(base().uri().toUri(), new Credentials("user", "pass"));
+    }
+
     private RestResource base(String... path) {
         return rest.resource("test", path);
     }
@@ -423,6 +427,34 @@ public class HttpGetTest {
 
         assertEquals("authorized", pojo.getString());
         assertEquals(987, pojo.getI());
+    }
+
+    @Test
+    public void shouldAuthorizeFromRegistry() {
+        givenCredentials();
+
+        Pojo pojo = base("authorized-pojo").GET(Pojo.class);
+
+        assertEquals("authorized", pojo.getString());
+        assertEquals(987, pojo.getI());
+    }
+
+    @Test
+    public void shouldAuthorizeAfterWith() {
+        givenCredentials();
+
+        Pojo pojo = base("{path}").with("path", "authorized-pojo").GET(Pojo.class);
+
+        assertEquals("authorized", pojo.getString());
+        assertEquals(987, pojo.getI());
+    }
+
+    @Test
+    public void shouldFailToAuthorize() {
+        EntityResponse<String> response = base("authorized-pojo").GET_Response(String.class);
+
+        assertEquals(UNAUTHORIZED, response.status());
+        assertNotNull(response.get());
     }
 
     @Test

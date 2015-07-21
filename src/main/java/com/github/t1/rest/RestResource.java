@@ -91,7 +91,7 @@ public class RestResource {
     }
 
     public RestResource with(String name, Object value) {
-        return new RestResource(uri.with(name, value));
+        return new RestResource(config, uri.with(name, value));
     }
 
     /**
