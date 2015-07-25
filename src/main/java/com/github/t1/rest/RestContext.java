@@ -129,7 +129,7 @@ public class RestContext {
         return createResource(uri);
     }
 
-    private RestResource createResource(UriTemplate uri) {
+    public RestResource createResource(UriTemplate uri) {
         return new RestResource(this, uri);
     }
 
