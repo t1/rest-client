@@ -1,6 +1,6 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestConfig.*;
+import static com.github.t1.rest.RestContext.*;
 import static java.util.Arrays.*;
 
 import java.net.URI;
@@ -11,41 +11,41 @@ import javax.ws.rs.core.MediaType;
 import lombok.Value;
 
 /**
- * Wraps the template for an http/https URI, where a resource is located, and a {@link RestConfig configuration}. If you
- * create a {@link RestResource} without specifying the config, the {@link RestConfig#DEFAULT_CONFIG default config} is
- * used. A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
+ * Wraps the template for an http/https URI, where a resource is located, and a {@link RestContext configuration}. If
+ * you create a {@link RestResource} without specifying the config, the {@link RestContext#DEFAULT_CONFIG default
+ * config} is used. A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
  */
 @Value
 public class RestResource {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
-    private final RestConfig config;
+    private final RestContext config;
     private final UriTemplate uri;
 
-    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
     public RestResource(URI uri) {
         this(UriTemplate.fromString(uri.toString()));
     }
 
-    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
     public RestResource(String uri) {
         this(UriTemplate.fromString(uri));
     }
 
-    /** resource for that uri, using the {@link RestConfig#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
     public RestResource(UriTemplate uri) {
         this(DEFAULT_CONFIG, uri);
     }
 
-    public RestResource(RestConfig config, URI uri) {
+    public RestResource(RestContext config, URI uri) {
         this(config, UriTemplate.fromString(uri.toString()));
     }
 
-    public RestResource(RestConfig config, String uri) {
+    public RestResource(RestContext config, String uri) {
         this(config, UriTemplate.fromString(uri));
     }
 
-    public RestResource(RestConfig config, UriTemplate uri) {
+    public RestResource(RestContext config, UriTemplate uri) {
         this.uri = check(uri);
         this.config = config;
     }
@@ -60,15 +60,15 @@ public class RestResource {
         return uri;
     }
 
-    public RestRequest request() {
-        return new RestRequest(this);
+    public RestRequest<Void> request() {
+        return new RestRequest<>(this, new Headers(), null);
     }
 
-    public <T> EntityRequest<T> accept(Class<T> acceptedType) {
+    public <T> RestRequest<T> accept(Class<T> acceptedType) {
         return request().accept(acceptedType);
     }
 
-    public EntityRequest<?> accept(Class<?> first, Class<?>... more) {
+    public RestRequest<?> accept(Class<?> first, Class<?>... more) {
         return request().accept(first, more);
     }
 
@@ -78,15 +78,15 @@ public class RestResource {
      * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> EntityRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+    public <T> RestRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
         return request().accept(acceptedType, contentType);
     }
 
-    public RestRequest basicAuth(Credentials credentials) {
+    public RestRequest<Void> basicAuth(Credentials credentials) {
         return request().basicAuth(credentials);
     }
 
-    public RestRequest header(String name, Object value) {
+    public RestRequest<Void> header(String name, Object value) {
         return request().header(name, value);
     }
 

@@ -152,7 +152,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void add(String key, String value) {
-        String old = headers.get(key);
+        String old = headers.value(key);
         if (old != null) {
             remove(key);
             value = old + ", " + value;
@@ -162,7 +162,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public String getFirst(String key) {
-        return headers.get(key);
+        return headers.value(key);
     }
 
     @Override
@@ -181,7 +181,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void addFirst(String key, String value) {
-        String old = headers.get(key);
+        String old = headers.value(key);
         if (old != null) {
             remove(key);
             value = value + ", " + old;

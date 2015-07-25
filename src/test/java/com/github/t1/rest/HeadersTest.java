@@ -65,8 +65,8 @@ public class HeadersTest {
         assertFalse(i.hasNext());
         assertEquals("Key", headers.getHeaderNames());
         assertEquals("Key: true", headers.toString());
-        assertEquals("true", headers.get("Key"));
-        assertEquals("true", headers.get("key"));
+        assertEquals("true", headers.value("Key"));
+        assertEquals("true", headers.value("key"));
         assertTrue(headers.contains("Key"));
         assertFalse(headers.isEmpty());
     }
@@ -110,10 +110,10 @@ public class HeadersTest {
         assertEquals("One: true & Two: 2", headers.toString());
         assertEquals("  One: true\n  Two: 2\n", headers.toListString());
 
-        assertEquals("true", headers.get("One"));
-        assertEquals("true", headers.get("one"));
-        assertEquals("2", headers.get("Two"));
-        assertEquals("2", headers.get("two"));
+        assertEquals("true", headers.value("One"));
+        assertEquals("true", headers.value("one"));
+        assertEquals("2", headers.value("Two"));
+        assertEquals("2", headers.value("two"));
     }
 
     @Test
@@ -133,9 +133,9 @@ public class HeadersTest {
         assertEquals("One: true & Two: 2 & Three: 3.0", headers.toString());
         assertEquals("  One: true\n  Two: 2\n  Three: 3.0\n", headers.toListString());
 
-        assertEquals("true", headers.get("One"));
-        assertEquals("2", headers.get("Two"));
-        assertEquals("3.0", headers.get("Three"));
+        assertEquals("true", headers.value("One"));
+        assertEquals("2", headers.value("Two"));
+        assertEquals("3.0", headers.value("Three"));
     }
 
     @Test
@@ -173,7 +173,7 @@ public class HeadersTest {
         assertFalse(i.hasNext());
         assertEquals("Key", headers.toString());
 
-        assertEquals("1", headers.get("Key"));
+        assertEquals("1", headers.value("Key"));
     }
 
     @Test
@@ -191,7 +191,7 @@ public class HeadersTest {
         assertEquals("Accept", headers.getHeaderNames());
         assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", headers.toString());
 
-        assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.get("Accept"));
+        assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.value("Accept"));
         assertEquals(asList( //
                 MediaType.valueOf("application/json;q=1.0"), //
                 MediaType.valueOf("text/html;charset=utf-8")), //
@@ -215,7 +215,7 @@ public class HeadersTest {
         assertEquals("Content-Type", headers.getHeaderNames());
         assertEquals("Content-Type: text/html;charset=utf-8", headers.toString());
 
-        assertEquals("text/html;charset=utf-8", headers.get("Content-Type"));
+        assertEquals("text/html;charset=utf-8", headers.value("Content-Type"));
     }
 
     @Test

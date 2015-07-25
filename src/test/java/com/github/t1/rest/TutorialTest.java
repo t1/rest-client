@@ -55,7 +55,7 @@ public class TutorialTest {
     @Test
     public void register_resource_and_GET() {
         // In the examples above, we used the default config, but you can't deregister, so we use a dedicated config
-        RestConfig rest = new RestConfig().register("httpbin", BASE + "/get");
+        RestContext rest = new RestContext().register("httpbin", BASE + "/get");
 
         HttpBinGetResponse pojo = rest.resource("httpbin").GET(HttpBinGetResponse.class);
 
@@ -64,7 +64,7 @@ public class TutorialTest {
 
     @Test
     public void build_registry_and_add_path_and_GET() {
-        RestConfig rest = new RestConfig() //
+        RestContext rest = new RestContext() //
                 .register("google", "http://google.com") //
                 .register("httpbin", BASE) //
                 .register("apple", "http://apple.com") //
@@ -77,7 +77,7 @@ public class TutorialTest {
 
     @Test
     public void GET_response_object_with_status() {
-        RestConfig rest = new RestConfig().register("httpbin", BASE + "/basic-auth/foo/bar");
+        RestContext rest = new RestContext().register("httpbin", BASE + "/basic-auth/foo/bar");
 
         EntityResponse<String> response = rest.resource("httpbin").GET_Response(String.class);
 
@@ -94,7 +94,7 @@ public class TutorialTest {
 
     @Test
     public void GET_with_basic_auth() {
-        RestConfig rest = new RestConfig() //
+        RestContext rest = new RestContext() //
                 .register("httpbin", BASE + "/basic-auth/foo/bar") //
                 .put(BASE, new Credentials("foo", "bar"));
 

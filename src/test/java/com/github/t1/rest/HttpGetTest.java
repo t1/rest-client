@@ -10,7 +10,6 @@ import static javax.ws.rs.core.Response.Status.Family.*;
 import static lombok.AccessLevel.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
 
 import java.io.InputStream;
 
@@ -20,16 +19,16 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import lombok.*;
-
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.*;
-
 import com.github.t1.rest.fallback.ConverterTools;
+
+import ch.qos.logback.classic.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.*;
 
 @RunWith(CdiRunner.class)
 public class HttpGetTest {
@@ -172,8 +171,8 @@ public class HttpGetTest {
     }
 
     @ClassRule
-    public static final DropwizardClientRule service = new DropwizardClientRule(new MockService(),
-            new YamlMessageBodyWriter());
+    public static final DropwizardClientRule service =
+            new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
 
     @Rule
     public ApacheConfigRule apacheConfig() {
@@ -191,7 +190,7 @@ public class HttpGetTest {
     }
 
     @Inject
-    RestConfig rest = new RestConfig();
+    RestContext rest = new RestContext();
 
     @Before
     public void before() {
@@ -216,7 +215,7 @@ public class HttpGetTest {
     }
 
     @SuppressWarnings("deprecation")
-    private <T> EntityRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
+    private <T> RestRequest<T> baseAccept(String path, Class<T> type, MediaType mediaType) {
         return base(path).accept(type, mediaType);
     }
 
@@ -273,9 +272,10 @@ public class HttpGetTest {
 
     @Test
     public void shouldAcceptType() {
-        EntityRequest<Pojo> request = base().accept(Pojo.class);
+        RestRequest<Pojo> request = base().accept(Pojo.class);
 
-        assertEquals(Pojo.class, request.acceptedType());
+        assertEquals(asList(APPLICATION_JSON_TYPE, APPLICATION_XML_TYPE, APPLICATION_YAML_TYPE),
+                request.headers().accept());
     }
 
     @Test
@@ -313,7 +313,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetPojoAsJson() {
-        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
+        RestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_JSON_TYPE);
 
         Pojo pojo = request.GET();
 
@@ -323,7 +323,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetPojoAsXml() {
-        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
+        RestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_XML_TYPE);
 
         Pojo pojo = request.GET();
 
@@ -333,7 +333,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetPojoAsYaml() {
-        EntityRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
+        RestRequest<Pojo> request = baseAccept("pojo", Pojo.class, APPLICATION_YAML_TYPE);
 
         Pojo pojo = request.GET();
 
@@ -344,7 +344,7 @@ public class HttpGetTest {
     @Test
     public void shouldGetPojoAsFooVendorType() {
         MediaType vendorType = MediaType.valueOf("application/vnd.foo+json");
-        EntityRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
+        RestRequest<FooVendorTypePojo> request = baseAccept("foopojo", FooVendorTypePojo.class, vendorType);
 
         FooVendorTypePojo pojo = request.GET();
 
@@ -355,7 +355,7 @@ public class HttpGetTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeJson() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+json");
-        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        RestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.GET();
 
@@ -366,7 +366,7 @@ public class HttpGetTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeXml() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+xml");
-        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        RestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.GET();
 
@@ -377,7 +377,7 @@ public class HttpGetTest {
     @Test
     public void shouldGetPojoAsDefaultVendorTypeYaml() {
         MediaType vendorType = MediaType.valueOf("application/vnd." + DefaultVendorTypePojo.class.getName() + "+yaml");
-        EntityRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
+        RestRequest<DefaultVendorTypePojo> request = baseAccept("vpojo", DefaultVendorTypePojo.class, vendorType);
 
         DefaultVendorTypePojo pojo = request.GET();
 
@@ -395,7 +395,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetTwoVendorTypesWithCommonBaseClass() {
-        EntityRequest<?> request = base("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
+        RestRequest<?> request = base("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
         FooVendorTypePojo pojo = request.GET_Response().get(FooVendorTypePojo.class);
 
         assertEquals("f", pojo.getString());
@@ -404,24 +404,24 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
-        EntityRequest<?> request = base("{path}") //
+        RestRequest<?> request = base("{path}") //
                 .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
 
         EntityResponse<?> barResponse = request.with("path", "barpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json", barResponse.contentType()
-                .toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
+                barResponse.contentType().toString());
         BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
         EntityResponse<?> bazResponse = request.with("path", "bazpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json", bazResponse.contentType()
-                .toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json",
+                bazResponse.contentType().toString());
         BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
         EntityResponse<?> bongResponse = request.with("path", "bongpojo").GET_Response();
-        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json", bongResponse
-                .contentType().toString());
+        assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json",
+                bongResponse.contentType().toString());
         BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
     }
@@ -464,13 +464,13 @@ public class HttpGetTest {
 
     @Test
     public void shouldDeriveTwoResorucesWithHeaders() {
-        EntityRequest<Pojo> base = base("authorized-pojo").accept(Pojo.class);
-        EntityRequest<Pojo> bar = base.header("foo", "bar");
-        EntityRequest<Pojo> baz = base.header("foo", "{foobar}").with("foobar", "baz");
+        RestRequest<Pojo> base = base("pojo").accept(Pojo.class);
+        RestRequest<Pojo> bar = base.header("foo", "bar");
+        RestRequest<Pojo> baz = base.header("foo", "{foobar}").with("foobar", "baz");
 
-        assertEquals(null, base.headers().get("foo"));
-        assertEquals("bar", bar.headers().get("foo"));
-        assertEquals("baz", baz.headers().get("foo"));
+        assertEquals(null, base.headers().value("foo"));
+        assertEquals("bar", bar.headers().value("foo"));
+        assertEquals("baz", baz.headers().value("foo"));
         assertNotEquals(bar, baz);
 
         assertEquals(bar, base.header("foo", "bar"));

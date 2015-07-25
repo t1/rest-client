@@ -31,8 +31,8 @@ public class RestCallFactory {
             .setDefaultRequestConfig(DEFAULT_CONFIG) //
             .build();
 
-    public <T> RestGetCall<T> createRestGetCall(RestConfig config, URI uri, Headers headers,
+    public <T> RestGetCall<T> createRestGetCall(RestContext config, URI uri, Headers headers,
             ResponseConverter<T> converter) {
-        return new RestGetCall<>(config, CLIENT, uri, headers, converter);
+        return new RestGetCall<>(config, uri, headers, CLIENT, converter);
     }
 }

@@ -1,5 +1,7 @@
 package com.github.t1.rest;
 
+import static javax.ws.rs.core.Response.Status.*;
+
 import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
@@ -7,30 +9,26 @@ import javax.ws.rs.core.MediaType;
 import lombok.*;
 
 /**
- * A {@link RestResource} plus headers to be sent. May be typed (see {@link EntityRequest}).
+ * A {@link RestResource} plus the {@link Headers} to be sent.
  */
-@Getter
-@EqualsAndHashCode
-public class RestRequest {
+@Value
+public class RestRequest<T> {
     @NonNull
     RestResource resource;
     @NonNull
     Headers headers;
+    ResponseConverter<T> converter;
 
-    public RestRequest(RestResource resource) {
-        this(resource, new Headers());
-    }
-
-    public RestRequest(RestResource resource, Headers headers) {
-        this.resource = resource;
-        this.headers = headers;
+    @Override
+    public String toString() {
+        return resource + " ::: " + headers;
     }
 
     public String authority() {
         return resource.authority();
     }
 
-    public RestConfig config() {
+    public RestContext config() {
         return resource.config();
     }
 
@@ -38,17 +36,48 @@ public class RestRequest {
         return resource.uri().toUri();
     }
 
-    public <T> T GET(Class<T> type) {
+
+    public RestRequest<T> basicAuth(Credentials credentials) {
+        return new RestRequest<>(resource, headers.basicAuth(credentials), converter);
+    }
+
+    public RestRequest<T> header(String name, Object value) {
+        return new RestRequest<>(resource, headers.header(name, value), converter);
+    }
+
+    public RestRequest<T> with(String name, String value) {
+        return new RestRequest<>(resource.with(name, value), headers.with(name, value), converter);
+    }
+
+
+    public T GET() {
+        return GET_Response().expecting(OK).get();
+    }
+
+    public <U> U GET(Class<U> type) {
         return accept(type).GET();
     }
 
-    public <T> EntityRequest<T> accept(Class<T> acceptedType) {
+    /**
+     * Execute a GET and return the {@link EntityResponse response object}. This method name is better than getResponse
+     * (as it indicates that a GET is executed), and anything else I could think of.
+     */
+    public EntityResponse<T> GET_Response() {
+        RestGetCall<T> request = config().createRestGetCall(uri(), headers, acceptedType());
+        return request.execute();
+    }
+
+    public Class<T> acceptedType() {
+        return (converter == null) ? null : converter.acceptedType();
+    }
+
+    public <U> RestRequest<U> accept(Class<U> acceptedType) {
         return entityRequest(resource.config().converterFor(acceptedType));
     }
 
-    @SuppressWarnings("unchecked")
-    public <T> EntityRequest<T> accept(Class<?> first, Class<?>... more) {
-        return (EntityRequest<T>) entityRequest(resource.config().converterFor(first, more));
+    public <U> RestRequest<U> accept(Class<?> first, Class<?>... more) {
+        ResponseConverter<U> otherConverter = resource.config().converterFor(first, more);
+        return entityRequest(otherConverter);
     }
 
     /**
@@ -57,28 +86,11 @@ public class RestRequest {
      * some content type, that is not complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> EntityRequest<T> accept(Class<T> acceptedType, MediaType contentType) {
+    public <U> RestRequest<U> accept(Class<U> acceptedType, MediaType contentType) {
         return entityRequest(resource.config().converterFor(acceptedType, contentType));
     }
 
-    private <T> EntityRequest<T> entityRequest(ResponseConverter<T> converter) {
-        return new EntityRequest<>(resource, headers.accept(converter.mediaTypes()), converter);
-    }
-
-    public RestRequest basicAuth(Credentials credentials) {
-        return new RestRequest(resource, headers.basicAuth(credentials));
-    }
-
-    public RestRequest header(String name, Object value) {
-        return new RestRequest(resource, headers.header(name, value));
-    }
-
-    public RestRequest with(String name, String value) {
-        return new RestRequest(resource.with(name, value), headers.header(name, value));
-    }
-
-    @Override
-    public String toString() {
-        return resource + " ::: " + headers;
+    private <U> RestRequest<U> entityRequest(ResponseConverter<U> converter) {
+        return new RestRequest<>(resource, headers.accept(converter.mediaTypes()), converter);
     }
 }

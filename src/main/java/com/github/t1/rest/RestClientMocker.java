@@ -1,21 +1,26 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestConfig.*;
+import static com.github.t1.rest.RestContext.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 
-import java.io.*;
 import java.net.URI;
 import java.util.*;
 
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
-
-import lombok.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.t1.rest.fallback.JsonMessageBodyReader;
 
+import lombok.*;
+
+/**
+ * Utility class for programmatically simulating REST requests and their responses. Could be a JUnit rule, but we don't
+ * want to have test dependencies at runtime.
+ * 
+ * @see RestClientRecorder
+ */
 public class RestClientMocker {
     @RequiredArgsConstructor
     public class ResourceMock {
@@ -45,32 +50,32 @@ public class RestClientMocker {
             return this;
         }
 
-        public <T> RestGetCall<T> createGetRequest(final RestConfig config, URI uri, final Headers requestHeaders,
+        public <T> RestGetCall<T> createGetRequest(final RestContext config, URI uri, final Headers requestHeaders,
                 final ResponseConverter<T> converter) {
-            return new RestGetCall<T>(config, null, uri, requestHeaders, converter) {
+            return new RestGetCall<T>(config, uri, requestHeaders, null, converter) {
                 private Headers responseHeaders = new Headers();
 
                 @Override
                 public EntityResponse<T> execute() {
                     if (requiredBasicAuthCredentials != null)
                         if (!requestHeaders.isBasicAuth(requiredBasicAuthCredentials))
-                            return response(UNAUTHORIZED, stream(""));
-                    return response(OK, stream(object));
+                            return response(UNAUTHORIZED, body(""));
+                    return response(OK, body(object));
                 }
 
-                private EntityResponse<T> response(Status status, InputStream inputStream) {
-                    return new EntityResponse<>(config, status, new Headers(), converter, inputStream);
+                private EntityResponse<T> response(Status status, byte[] body) {
+                    return new EntityResponse<>(config, status, new Headers(), converter, body);
                 }
 
                 @SneakyThrows(JsonProcessingException.class)
-                private ByteArrayInputStream stream(Object object) {
+                private byte[] body(Object object) {
                     if (object instanceof String && requestHeaders.accepts(TEXT_PLAIN_TYPE)) {
                         contentType(TEXT_PLAIN_TYPE);
-                        return new ByteArrayInputStream(((String) object).getBytes());
+                        return ((String) object).getBytes();
                     }
                     if (requestHeaders.accepts(APPLICATION_JSON_TYPE)) {
                         contentType(APPLICATION_JSON_TYPE);
-                        return new ByteArrayInputStream(JsonMessageBodyReader.MAPPER.writeValueAsBytes(object));
+                        return JsonMessageBodyReader.MAPPER.writeValueAsBytes(object);
                     }
                     throw new UnsupportedOperationException("the mock can't yet convert to any of " //
                             + requestHeaders.accept());
@@ -83,12 +88,12 @@ public class RestClientMocker {
         }
     }
 
-    private final RestConfig config;
+    private final RestContext config;
     private RestCallFactory originalRequestFactory;
     private final Map<URI, RequestMock> mockedUris = new LinkedHashMap<>();
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
-        public <T> RestGetCall<T> createRestGetCall(RestConfig config, URI uri, Headers headers,
+        public <T> RestGetCall<T> createRestGetCall(RestContext config, URI uri, Headers headers,
                 ResponseConverter<T> converter) {
             if (!mockedUris.containsKey(uri))
                 throw new IllegalArgumentException("unmocked createGetRequest on " + uri + "\n" //
@@ -104,7 +109,7 @@ public class RestClientMocker {
         this(DEFAULT_CONFIG);
     }
 
-    public RestClientMocker(RestConfig config) {
+    public RestClientMocker(RestContext config) {
         this.config = config;
     }
 
@@ -128,8 +133,8 @@ public class RestClientMocker {
 
     public ResourceMock on(UriTemplate uri) {
         if (!setup)
-            throw new RuntimeException(RestClientMocker.class.getSimpleName()
-                    + " not properly set up: call #before() and #after()!");
+            throw new RuntimeException(
+                    RestClientMocker.class.getSimpleName() + " not properly set up: call #before() and #after()!");
         return new ResourceMock(uri);
     }
 }

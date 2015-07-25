@@ -9,27 +9,28 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-
 import com.github.t1.rest.UriTemplate.NonQuery;
 import com.github.t1.rest.fallback.*;
+
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Holds the configuration that applies to a set of {@link RestResource}s:
  * <ul>
- * <li>The {@link RestResource resources} and {@link RestResourceRegistry resource registries} to lookup resources by alias</li>
+ * <li>The {@link RestResource resources} and {@link RestResourceRegistry resource registries} to lookup resources by
+ * alias</li>
  * <li>The {@link Credentials} and {@link CredentialsRegistry credential registries} to lookup by base uri</li>
  * <li>The {@link RestCallFactory} to create requests</li>
  * <li>The readers to convert bodies from their {@link MediaType} to the target object</li>
  * </ul>
  * For most applications, one of these is enough, so there's a default config: {@link #DEFAULT_CONFIG}.
- * 
+ * <p>
  * FIXME make config immutable
  */
 @Slf4j
-public class RestConfig {
-    public static final RestConfig DEFAULT_CONFIG = new RestConfig();
+public class RestContext {
+    public static final RestContext DEFAULT_CONFIG = new RestContext();
 
     private final List<MessageBodyReader<?>> readers = new ArrayList<>();
 
@@ -46,7 +47,7 @@ public class RestConfig {
     @Inject
     private Instance<CredentialsRegistry> credentialsRegistryInstances;
 
-    public RestConfig() {
+    public RestContext() {
         add(new ByteArrayMessageBodyReader());
         add(new InputStreamMessageBodyReader());
         add(new JsonMessageBodyReader());
@@ -55,7 +56,7 @@ public class RestConfig {
         add(new YamlMessageBodyReader());
     }
 
-    public RestConfig add(MessageBodyReader<?> reader) {
+    public RestContext add(MessageBodyReader<?> reader) {
         readers.add(reader);
         return this;
     }
@@ -70,7 +71,7 @@ public class RestConfig {
         }
     }
 
-    public RestConfig add(RestResourceRegistry uriRegistry) {
+    public RestContext add(RestResourceRegistry uriRegistry) {
         if (this.uriRegistry == null)
             this.uriRegistry = uriRegistry;
         else
@@ -78,19 +79,19 @@ public class RestConfig {
         return this;
     }
 
-    public RestConfig register(String alias, String uri) {
+    public RestContext register(String alias, String uri) {
         return register(alias, UriTemplate.fromString(uri));
     }
 
-    public RestConfig register(String alias, URI uri) {
+    public RestContext register(String alias, URI uri) {
         return register(alias, UriTemplate.from(uri));
     }
 
-    public RestConfig register(String alias, UriTemplate uri) {
+    public RestContext register(String alias, UriTemplate uri) {
         return register(alias, createResource(uri));
     }
 
-    public RestConfig register(String alias, RestResource resource) {
+    public RestContext register(String alias, RestResource resource) {
         this.uriRegistry = new StaticRestResourceRegistry(alias, resource, this.uriRegistry);
         return this;
     }
@@ -128,12 +129,12 @@ public class RestConfig {
         return createResource(uri);
     }
 
-    public RestResource createResource(UriTemplate uri) {
+    private RestResource createResource(UriTemplate uri) {
         return new RestResource(this, uri);
     }
 
 
-    public RestConfig add(CredentialsRegistry credentialsRegistry) {
+    public RestContext add(CredentialsRegistry credentialsRegistry) {
         if (this.credentialsRegistry == null)
             this.credentialsRegistry = credentialsRegistry;
         else
@@ -141,7 +142,7 @@ public class RestConfig {
         return this;
     }
 
-    public RestConfig put(URI uri, Credentials credentials) {
+    public RestContext put(URI uri, Credentials credentials) {
         this.credentialsRegistry = new StaticCredentialsRegistry(uri, credentials, credentialsRegistry);
         return this;
     }
@@ -162,8 +163,9 @@ public class RestConfig {
         return result;
     }
 
-    public ResponseConverter<?> converterFor(Class<?> first, Class<?>... more) {
-        ResponseConverter<?> result = new ResponseConverter<>(Object.class);
+    public <T> ResponseConverter<T> converterFor(Class<?> first, Class<?>... more) {
+        @SuppressWarnings("unchecked")
+        ResponseConverter<T> result = (ResponseConverter<T>) new ResponseConverter<>(Object.class);
         addReadersFor(first, result);
         for (Class<?> m : more)
             addReadersFor(m, result);
@@ -197,10 +199,11 @@ public class RestConfig {
         return (List) readers;
     }
 
-    public <T> RestGetCall<T> createRestGetCall(URI uri, Headers headers, ResponseConverter<T> converter) {
+    public <T> RestGetCall<T> createRestGetCall(URI uri, Headers headers, Class<T> acceptedType) {
         Credentials credentials = getCredentials(uri);
         if (credentials != null)
             headers = headers.basicAuth(credentials);
+        ResponseConverter<T> converter = converterFor(acceptedType);
         return requestFactory.createRestGetCall(this, uri, headers, converter);
     }
 

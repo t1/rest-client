@@ -1,6 +1,6 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestConfig.*;
+import static com.github.t1.rest.RestContext.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.junit.Assert.*;
 
@@ -10,7 +10,7 @@ import org.junit.*;
 
 import lombok.*;
 
-public class RestClientMockRuleTest {
+public class RestClientMockerTest {
     private static final URI BASE = URI.create("http://example.mock");
 
     @Data
@@ -65,7 +65,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldGetFromRegistry() {
         mock.on(BASE + "/pojo").GET().respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         Pojo value = rest.resource("example").GET(Pojo.class);
 
@@ -75,7 +75,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldGetFromRegistryAddingPath() {
         mock.on(BASE + "/pojo").GET().respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE);
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE);
 
         Pojo value = rest.resource("example", "/pojo").GET(Pojo.class);
 
@@ -85,7 +85,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldFailBasicAuth() {
         mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "p").respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
 
@@ -95,7 +95,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldFailBasicAuthWithWrongUsername() {
         mock.on(BASE + "/pojo").GET().requireBasicAuth("x", "p").respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
 
@@ -105,7 +105,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldFailBasicAuthWithWrongPassword() {
         mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "x").respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE + "/pojo");
 
         EntityResponse<Pojo> response = rest.resource("example").GET_Response(Pojo.class);
 
@@ -115,7 +115,7 @@ public class RestClientMockRuleTest {
     @Test
     public void shouldAuthenticate() {
         mock.on(BASE + "/pojo").GET().requireBasicAuth("u", "p").respond(POJO);
-        RestConfig rest = DEFAULT_CONFIG.register("example", BASE + "/pojo").put(BASE, new Credentials("u", "p"));
+        RestContext rest = DEFAULT_CONFIG.register("example", BASE + "/pojo").put(BASE, new Credentials("u", "p"));
 
         Pojo response = rest.resource("example").GET(Pojo.class);
 

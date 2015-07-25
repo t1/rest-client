@@ -13,7 +13,7 @@ import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 
 @Alternative
-@Consumes({ APPLICATION_OCTET_STREAM, APPLICATION_JAVA_ARCHIVE })
+@Consumes({ APPLICATION_OCTET_STREAM, APPLICATION_JAVA_ARCHIVE, WILDCARD })
 public class InputStreamMessageBodyReader implements MessageBodyReader<InputStream> {
     public static final String APPLICATION_JAVA_ARCHIVE = "application/java-archive";
     public static final MediaType APPLICATION_JAVA_ARCHIVE_TYPE = MediaType.valueOf(APPLICATION_JAVA_ARCHIVE);

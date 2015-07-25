@@ -10,7 +10,7 @@ import com.github.t1.rest.Headers.Header;
 @Data
 @RequiredArgsConstructor
 public abstract class RestResponse {
-    private final RestConfig config;
+    private final RestContext config;
     private final StatusType status;
     private final Headers headers;
 

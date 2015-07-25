@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.fasterxml.jackson.core.JsonToken.*;
 import static com.github.t1.rest.MethodExtensions.*;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
@@ -7,17 +8,53 @@ import static javax.ws.rs.core.MediaType.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.ArrayList;
 
 import javax.ws.rs.core.*;
 
-import lombok.*;
-
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.*;
 import com.github.t1.rest.Headers.Header;
+
+import lombok.*;
 
 @Value
 @Getter(NONE)
+@JsonSerialize(using = Headers.HeadersSerializer.class)
+@JsonDeserialize(using = Headers.HeadersDeserializer.class)
 public class Headers implements Iterable<Header> {
+    public static class HeadersSerializer extends JsonSerializer<Headers> {
+        @Override
+        public void serialize(Headers headers, JsonGenerator json, SerializerProvider serializers) throws IOException {
+            json.writeStartObject();
+            for (Header header : headers) {
+                json.writeFieldName(header.name());
+                json.writeString(header.value());
+            }
+            json.writeEndObject();
+        }
+    }
+
+    public static class HeadersDeserializer extends JsonDeserializer<Headers> {
+        @Override
+        public Headers deserialize(JsonParser json, DeserializationContext context) throws IOException {
+            Headers headers = new Headers();
+            if (!json.isExpectedStartObjectToken())
+                throw new RuntimeException("expected to start headers as object but found: " + json.getCurrentToken());
+            while (json.nextToken() == FIELD_NAME) {
+                String name = json.getCurrentName();
+                String value = json.nextTextValue();
+                headers = headers.header(name, value);
+            }
+            if (json.getCurrentToken() != END_OBJECT)
+                throw new RuntimeException("expected to end object but found: " + json.getCurrentToken());
+            return headers;
+        }
+    }
+
     private static final String ACCEPT = "Accept";
     private static final String CONTENT_TYPE = "Content-Type";
     private static final String CONTENT_LENGTH = "Content-Length";
@@ -98,13 +135,13 @@ public class Headers implements Iterable<Header> {
         return tail.header(name);
     }
 
-    public String get(String name) {
+    public String value(String name) {
         Header header = header(name);
         return (header == null) ? null : header.value();
     }
 
     public boolean contains(String name) {
-        return get(name) != null;
+        return header(name) != null;
     }
 
     public int size() {
@@ -171,7 +208,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public MediaType contentType() {
-        String contentType = get(CONTENT_TYPE);
+        String contentType = value(CONTENT_TYPE);
         if (contentType == null)
             return WILDCARD_TYPE;
         if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
@@ -185,7 +222,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public Integer contentLength() {
-        String contentLength = get(CONTENT_LENGTH);
+        String contentLength = value(CONTENT_LENGTH);
         if (contentLength == null)
             return null;
         return Integer.valueOf(contentLength);
@@ -227,7 +264,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public boolean isBasicAuth(Credentials credentials) {
-        return contains(AUTHORIZATION) && get(AUTHORIZATION).equals(basicAuthValue(credentials));
+        return contains(AUTHORIZATION) && value(AUTHORIZATION).equals(basicAuthValue(credentials));
     }
 
     private String basicAuthValue(Credentials credentials) {

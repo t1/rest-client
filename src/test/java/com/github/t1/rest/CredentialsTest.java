@@ -14,7 +14,7 @@ public class CredentialsTest {
             printBase64Binary((CREDENTIALS.userName() + ":" + CREDENTIALS.password()).getBytes());
 
     private final URI baseUri = URI.create("http://example.org/app/");
-    private final RestConfig config = new RestConfig();
+    private final RestContext config = new RestContext();
 
     private void givenCredentials() {
         givenCredentials(URI.create(baseUri.toString().substring(0, baseUri.toString().length() - 1)));
@@ -176,9 +176,9 @@ public class CredentialsTest {
     public void shouldAddBasicAuthHeader() {
         givenCredentials();
 
-        RestGetCall<?> request = config.createRestGetCall(baseUri, new Headers(), null);
+        RestGetCall<?> request = config.createRestGetCall(baseUri, new Headers(), String.class);
 
-        String auth = request.requestHeaders().get("Authorization");
+        String auth = request.requestHeaders().value("Authorization");
         assertEquals("Basic " + BASE64_CREDENTIALS, auth);
     }
 }

@@ -6,23 +6,27 @@ import static javax.ws.rs.core.Response.Status.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
+
+import java.net.UnknownHostException;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
-
-import lombok.Data;
 
 import org.apache.http.client.config.RequestConfig;
 import org.junit.*;
 import org.slf4j.LoggerFactory;
 
-import ch.qos.logback.classic.*;
-
 import com.fasterxml.jackson.core.JsonParseException;
 
-public class ApacheClientTest {
-    /** some of these tests are slow by design... too slow for regular unit tests. And they require an Internet connection */
+import ch.qos.logback.classic.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.Data;
+
+public class ApacheHttpClientTest {
+    /**
+     * some of these tests are slow by design... too slow for regular unit tests. And they require an Internet
+     * connection
+     */
     private static final boolean EXECUTE_SLOW_TESTS = false;
 
     private static byte[] STREAM;
@@ -34,6 +38,8 @@ public class ApacheClientTest {
 
     @Path("/")
     public static class MockService {
+        private static final int MB = 1024 * 1024;
+
         @GET
         @Path("/bad-request")
         public Response badRequest() {
@@ -58,7 +64,7 @@ public class ApacheClientTest {
         @Produces(APPLICATION_OCTET_STREAM)
         public byte[] stream() {
             if (STREAM == null)
-                STREAM = new byte[12 * 1024 * 1024];
+                STREAM = new byte[12 * MB];
             return STREAM;
         }
     }
@@ -94,7 +100,7 @@ public class ApacheClientTest {
 
     @Test(expected = HttpTimeoutException.class)
     public void shouldTimeout() {
-        assumeTrue(EXECUTE_SLOW_TESTS);
+        assumeTrue(EXECUTE_SLOW_TESTS); // TODO add per-request timeouts, so this can run normally
         new RestResource(service.baseUri() + "/delay").GET(String.class);
     }
 
@@ -111,7 +117,7 @@ public class ApacheClientTest {
             new RestResource("http://example.nowhere").GET_Response();
             fail("expected RuntimeException");
         } catch (RuntimeException e) {
-            assertEquals("can't execute GET http://example.nowhere HTTP/1.1", e.getMessage());
+            assertEquals(UnknownHostException.class, e.getCause().getClass());
         }
     }
 
