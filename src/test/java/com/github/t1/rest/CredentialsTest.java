@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.RestContext.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
@@ -14,14 +15,14 @@ public class CredentialsTest {
             printBase64Binary((CREDENTIALS.userName() + ":" + CREDENTIALS.password()).getBytes());
 
     private final URI baseUri = URI.create("http://example.org/app/");
-    private final RestContext config = new RestContext();
+    private RestContext config = REST;
 
     private void givenCredentials() {
         givenCredentials(URI.create(baseUri.toString().substring(0, baseUri.toString().length() - 1)));
     }
 
     private void givenCredentials(URI uri) {
-        config.put(uri, CREDENTIALS);
+        config = config.register(uri, CREDENTIALS);
     }
 
     @Test

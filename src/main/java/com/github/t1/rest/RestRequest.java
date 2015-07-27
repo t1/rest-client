@@ -4,6 +4,7 @@ import static javax.ws.rs.core.Response.Status.*;
 
 import java.net.URI;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.MediaType;
 
 import lombok.*;
@@ -11,6 +12,7 @@ import lombok.*;
 /**
  * A {@link RestResource} plus the {@link Headers} to be sent.
  */
+@Immutable
 @Value
 public class RestRequest<T> {
     @NonNull

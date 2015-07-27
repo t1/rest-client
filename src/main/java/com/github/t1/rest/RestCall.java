@@ -3,6 +3,7 @@ package com.github.t1.rest;
 import java.io.IOException;
 import java.net.*;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.Response.*;
 import javax.ws.rs.core.Response.Status.Family;
 
@@ -14,6 +15,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 
+@Immutable
 @Slf4j
 abstract class RestCall {
     @Value

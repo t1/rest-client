@@ -5,6 +5,7 @@ import static com.github.t1.rest.fallback.ByteArrayMessageBodyReader.*;
 import java.io.IOException;
 import java.net.URI;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.Response.StatusType;
 
 import org.apache.http.HttpEntity;
@@ -13,6 +14,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 
 import lombok.*;
 
+@Immutable
 class RestGetCall<T> extends RestCall {
     @Getter
     private final ResponseConverter<T> converter;

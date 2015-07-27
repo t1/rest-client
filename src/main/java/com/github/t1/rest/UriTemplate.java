@@ -8,12 +8,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.regex.*;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.github.t1.rest.UriAuthority.HostBasedAuthority;
 
 import lombok.*;
 import lombok.experimental.ExtensionMethod;
 
 /** Immutable, fluent, strictly appendable builder for URI templates. */
+@Immutable
 @EqualsAndHashCode
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
@@ -45,6 +48,7 @@ public abstract class UriTemplate {
         return list;
     }
 
+    @Immutable
     @EqualsAndHashCode(callSuper = true)
     public static class UriScheme extends NonAuthority {
         public static UriScheme of(URI uri) {
@@ -116,6 +120,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static abstract class NonAuthority extends NonPath {
         private NonAuthority(UriTemplate previous) {
             super(previous);
@@ -138,6 +143,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static abstract class NonPath extends NonQuery {
         NonPath(UriTemplate previous) {
             super(previous);
@@ -176,6 +182,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static abstract class UriPath extends NonQuery {
         private UriPath(UriTemplate previous) {
             super(previous);
@@ -216,6 +223,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static class RelativePath extends UriPath {
         private RelativePath(NonPath previous, String path) {
             super(previous);
@@ -240,6 +248,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     @EqualsAndHashCode(callSuper = true)
     public static class AbsolutePath extends UriPath {
         private final String path;
@@ -265,6 +274,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     @EqualsAndHashCode(callSuper = true)
     public static class PathElement extends UriPath {
         private final String path;
@@ -290,6 +300,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     @EqualsAndHashCode(callSuper = true)
     public static class MatrixPath extends UriPath {
         private final String key;
@@ -319,6 +330,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static abstract class NonQuery extends NonFragment {
         private NonQuery(UriTemplate previous) {
             super(previous);
@@ -341,6 +353,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     @EqualsAndHashCode(callSuper = true)
     public static class Query extends NonFragment {
         private Query(UriTemplate before, String keyValue) {
@@ -401,6 +414,7 @@ public abstract class UriTemplate {
         }
     }
 
+    @Immutable
     public static abstract class NonFragment extends UriTemplate {
         private NonFragment(UriTemplate previous) {
             super(previous);
@@ -413,6 +427,7 @@ public abstract class UriTemplate {
         public abstract NonFragment query(String key, String value);
     }
 
+    @Immutable
     public static class Fragment extends UriTemplate {
         private final String fragment;
 

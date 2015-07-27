@@ -2,7 +2,11 @@ package com.github.t1.rest;
 
 import java.net.URI;
 import java.nio.file.*;
+import java.util.List;
 
+import javax.annotation.concurrent.Immutable;
+
+@Immutable
 public abstract class CredentialsRegistry {
     /** Retrieve the resource for that URI */
     public abstract Credentials get(URI uri);
@@ -35,4 +39,6 @@ public abstract class CredentialsRegistry {
         string = string.substring(0, string.length() - toBeRemoved.length());
         return URI.create(string);
     }
+
+    public abstract List<URI> uris();
 }

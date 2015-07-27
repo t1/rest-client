@@ -4,10 +4,13 @@ import static com.github.t1.rest.MethodExtensions.*;
 
 import java.util.regex.*;
 
+import javax.annotation.concurrent.Immutable;
+
 import com.github.t1.rest.UriTemplate.NonPath;
 
 import lombok.*;
 
+@Immutable
 public abstract class UriAuthority extends NonPath {
     private UriAuthority(NonAuthority previous) {
         super(previous);
@@ -52,6 +55,7 @@ public abstract class UriAuthority extends NonPath {
                 ;
     }
 
+    @Immutable
     @Getter
     @EqualsAndHashCode(callSuper = true)
     public static class RegistryBasedAuthority extends UriAuthority {
@@ -79,6 +83,7 @@ public abstract class UriAuthority extends NonPath {
         }
     }
 
+    @Immutable
     @Getter
     @EqualsAndHashCode(callSuper = true)
     public static class HostBasedAuthority extends UriAuthority {

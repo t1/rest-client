@@ -29,6 +29,6 @@ public class YamlMessageBodyReader implements MessageBodyReader<Object> {
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, String> httpHeaders, InputStream entityStream) {
-        return yaml.load(entityStream);
+        return yaml.loadAs(entityStream, type);
     }
 }

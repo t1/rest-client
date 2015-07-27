@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.RestContext.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
@@ -54,8 +55,7 @@ public class TutorialTest {
 
     @Test
     public void register_resource_and_GET() {
-        // In the examples above, we used the default config, but you can't deregister, so we use a dedicated config
-        RestContext rest = new RestContext().register("httpbin", BASE + "/get");
+        RestContext rest = REST.register("httpbin", BASE + "/get");
 
         HttpBinGetResponse pojo = rest.resource("httpbin").GET(HttpBinGetResponse.class);
 
@@ -64,7 +64,7 @@ public class TutorialTest {
 
     @Test
     public void build_registry_and_add_path_and_GET() {
-        RestContext rest = new RestContext() //
+        RestContext rest = REST //
                 .register("google", "http://google.com") //
                 .register("httpbin", BASE) //
                 .register("apple", "http://apple.com") //
@@ -77,7 +77,7 @@ public class TutorialTest {
 
     @Test
     public void GET_response_object_with_status() {
-        RestContext rest = new RestContext().register("httpbin", BASE + "/basic-auth/foo/bar");
+        RestContext rest = REST.register("httpbin", BASE + "/basic-auth/foo/bar");
 
         EntityResponse<String> response = rest.resource("httpbin").GET_Response(String.class);
 
@@ -94,9 +94,9 @@ public class TutorialTest {
 
     @Test
     public void GET_with_basic_auth() {
-        RestContext rest = new RestContext() //
+        RestContext rest = REST //
                 .register("httpbin", BASE + "/basic-auth/foo/bar") //
-                .put(BASE, new Credentials("foo", "bar"));
+                .register(BASE, new Credentials("foo", "bar"));
 
         AuthenticatedPage page = rest.resource("httpbin").GET(AuthenticatedPage.class);
 

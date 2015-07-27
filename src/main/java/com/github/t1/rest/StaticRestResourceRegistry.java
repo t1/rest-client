@@ -2,8 +2,11 @@ package com.github.t1.rest;
 
 import java.util.*;
 
+import javax.annotation.concurrent.Immutable;
+
 import lombok.*;
 
+@Immutable
 @Value
 public class StaticRestResourceRegistry implements RestResourceRegistry {
     @NonNull

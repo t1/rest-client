@@ -174,12 +174,13 @@ public class RestClientRecorder {
         }
     };
 
+    @Getter
     private final RestContext config;
     private final Path folder;
-    private RestCallFactory originalRequestFactory;
+    private final RestCallFactory originalRequestFactory;
 
     public RestClientRecorder() {
-        this(DEFAULT_CONFIG);
+        this(REST);
     }
 
     public RestClientRecorder(RestContext config) {
@@ -187,20 +188,12 @@ public class RestClientRecorder {
     }
 
     public RestClientRecorder(Path folder) {
-        this(DEFAULT_CONFIG, folder);
+        this(REST, folder);
     }
 
     public RestClientRecorder(RestContext config, Path folder) {
-        this.config = config;
+        this.originalRequestFactory = config.restCallFactory();
+        this.config = config.restCallFactory(requestFactoryMock);
         this.folder = folder;
-    }
-
-    public void before() {
-        this.originalRequestFactory = config.requestFactory();
-        config.requestFactory(requestFactoryMock);
-    }
-
-    public void after() {
-        config.requestFactory(originalRequestFactory);
     }
 }

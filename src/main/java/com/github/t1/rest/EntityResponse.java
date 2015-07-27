@@ -2,8 +2,10 @@ package com.github.t1.rest;
 
 import java.io.*;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.Response.StatusType;
 
+@Immutable
 public class EntityResponse<T> extends RestResponse {
     private final ResponseConverter<T> converter;
     private final byte[] body;

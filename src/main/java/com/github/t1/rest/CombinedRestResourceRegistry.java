@@ -5,12 +5,22 @@ import static java.util.Arrays.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class CombinedRestResourceRegistry implements RestResourceRegistry {
-    private final List<RestResourceRegistry> registries;
+import javax.annotation.concurrent.Immutable;
 
-    public CombinedRestResourceRegistry(RestResourceRegistry... registries) {
-        this.registries = asList(registries);
+@Immutable
+public class CombinedRestResourceRegistry implements RestResourceRegistry {
+    public static RestResourceRegistry combine(RestResourceRegistry... registries) {
+        return combine(asList(registries));
     }
+
+    public static RestResourceRegistry combine(Iterable<RestResourceRegistry> registries) {
+        CombinedRestResourceRegistry result = new CombinedRestResourceRegistry();
+        for (RestResourceRegistry registry : registries)
+            result.registries.add(registry);
+        return result;
+    }
+
+    private final List<RestResourceRegistry> registries = new ArrayList<>();
 
     @Override
     public RestResource get(String alias) {

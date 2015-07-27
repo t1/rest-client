@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.t1.rest.fallback.JsonMessageBodyReader;
 
 import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Utility class for programmatically simulating REST requests and their responses. Could be a JUnit rule, but we don't
@@ -21,6 +22,7 @@ import lombok.*;
  * 
  * @see RestClientRecorder
  */
+@Slf4j
 public class RestClientMocker {
     @RequiredArgsConstructor
     public class ResourceMock {
@@ -28,12 +30,14 @@ public class RestClientMocker {
 
         public RequestMock GET() {
             RequestMock requestMock = new RequestMock();
-            mockedUris.put(uri.toUri(), requestMock);
+            RequestMock oldMock = mockedUris.put(uri.toUri(), requestMock);
+            if (oldMock != null)
+                log.warn("replaced {} for {}", oldMock, uri);
             return requestMock;
         }
     }
 
-    public class RequestMock {
+    public static class RequestMock {
         private Credentials requiredBasicAuthCredentials;
         private Object object;
 
@@ -86,10 +90,16 @@ public class RestClientMocker {
                 }
             };
         }
+
+        @Override
+        public String toString() {
+            return "request-mock" + ((requiredBasicAuthCredentials == null) ? "" : " requiring auth") //
+                    + " returning " + object;
+        }
     }
 
+    @Getter
     private final RestContext config;
-    private RestCallFactory originalRequestFactory;
     private final Map<URI, RequestMock> mockedUris = new LinkedHashMap<>();
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
@@ -103,24 +113,12 @@ public class RestClientMocker {
         }
     };
 
-    private boolean setup = false;
-
     public RestClientMocker() {
-        this(DEFAULT_CONFIG);
+        this(REST);
     }
 
     public RestClientMocker(RestContext config) {
-        this.config = config;
-    }
-
-    public void before() {
-        this.originalRequestFactory = config.requestFactory();
-        config.requestFactory(requestFactoryMock);
-        setup = true;
-    }
-
-    public void after() {
-        config.requestFactory(originalRequestFactory);
+        this.config = config.restCallFactory(requestFactoryMock);
     }
 
     public ResourceMock on(String uri) {
@@ -132,9 +130,6 @@ public class RestClientMocker {
     }
 
     public ResourceMock on(UriTemplate uri) {
-        if (!setup)
-            throw new RuntimeException(
-                    RestClientMocker.class.getSimpleName() + " not properly set up: call #before() and #after()!");
         return new ResourceMock(uri);
     }
 }

@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import static com.github.t1.rest.RestContext.*;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
@@ -15,23 +16,19 @@ public class RestClientRecorderTest {
     private static final Path TMP = Paths.get("target/recordings");
     private static final Credentials CREDENTIALS = new Credentials("foo", "bar");
 
-    private final RestContext rest = new RestContext();
-    private final RestClientRecorder recorder = new RestClientRecorder(rest, TMP);
-    public final RestClientMocker mock = new RestClientMocker(rest);
+    private RestContext rest;
+    private RestClientMocker mock;
 
     @Before
     public void before() {
         deleteRecordings();
-        rest.register("base", BASE);
-        mock.before(); // mock before recorder!
-        recorder.before();
+        mock = new RestClientMocker(REST.register("base", BASE));
+        rest = new RestClientRecorder(mock.config(), TMP).config();
     }
 
     @After
     public void after() {
         deleteRecordings();
-        recorder.after();
-        mock.after();
     }
 
     @SneakyThrows(IOException.class)

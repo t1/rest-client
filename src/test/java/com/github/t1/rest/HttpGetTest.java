@@ -190,7 +190,7 @@ public class HttpGetTest {
     }
 
     @Inject
-    RestContext rest = new RestContext();
+    RestContext rest;
 
     @Before
     public void before() {
@@ -203,7 +203,7 @@ public class HttpGetTest {
     }
 
     private void givenCredentials() {
-        rest.put(base().uri().toUri(), new Credentials("user", "pass"));
+        rest = rest.register(base().uri().toUri(), new Credentials("user", "pass"));
     }
 
     private RestResource base(String... path) {

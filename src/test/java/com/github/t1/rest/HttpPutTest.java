@@ -70,7 +70,7 @@ public class HttpPutTest {
             new DropwizardClientRule(new MockService(), new YamlMessageBodyWriter());
 
     @Inject
-    RestContext rest = new RestContext();
+    RestContext rest;
 
     private RestResource base(String path) {
         return new RestResource(UriTemplate.fromString(service.baseUri() + "/" + path));

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.ArrayList;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.*;
 
 import com.fasterxml.jackson.core.*;
@@ -21,6 +22,7 @@ import com.github.t1.rest.Headers.Header;
 
 import lombok.*;
 
+@Immutable
 @Value
 @Getter(NONE)
 @JsonSerialize(using = Headers.HeadersSerializer.class)
@@ -62,6 +64,7 @@ public class Headers implements Iterable<Header> {
 
     private static final String WHITESPACE = "\\s*";
 
+    @Immutable
     @Value
     public static class Header {
         String name, value;

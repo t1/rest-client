@@ -2,11 +2,14 @@ package com.github.t1.rest;
 
 import java.net.URI;
 
+import javax.annotation.concurrent.Immutable;
+
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.cache.*;
 
 /** A factory for all types of {@link RestCall}s. Useful for mocking. */
+@Immutable
 public class RestCallFactory {
     private static final int DEFAULT_MAX_CACHE_ENTRIES = 1000;
     private static final int DEFAULT_MAX_CACHE_OBJECT_SIZE = 8192;

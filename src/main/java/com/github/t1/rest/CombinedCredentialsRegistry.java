@@ -3,14 +3,25 @@ package com.github.t1.rest;
 import static java.util.Arrays.*;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
-public class CombinedCredentialsRegistry extends CredentialsRegistry {
-    private final List<CredentialsRegistry> registries;
+import javax.annotation.concurrent.Immutable;
 
-    public CombinedCredentialsRegistry(CredentialsRegistry... registries) {
-        this.registries = asList(registries);
+@Immutable
+public class CombinedCredentialsRegistry extends CredentialsRegistry {
+    public static CredentialsRegistry combine(CredentialsRegistry... registries) {
+        return combine(asList(registries));
     }
+
+    public static CredentialsRegistry combine(Iterable<CredentialsRegistry> registries) {
+        CombinedCredentialsRegistry result = new CombinedCredentialsRegistry();
+        for (CredentialsRegistry registry : registries)
+            result.registries.add(registry);
+        return result;
+    }
+
+    private final List<CredentialsRegistry> registries = new ArrayList<>();
 
     @Override
     public Credentials get(URI uri) {
@@ -20,5 +31,13 @@ public class CombinedCredentialsRegistry extends CredentialsRegistry {
                 return resource;
         }
         return null;
+    }
+
+    @Override
+    public List<URI> uris() {
+        List<URI> list = new ArrayList<>();
+        for (CredentialsRegistry registry : registries)
+            list.addAll(registry.uris());
+        return list;
     }
 }

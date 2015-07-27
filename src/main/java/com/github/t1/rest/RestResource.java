@@ -6,15 +6,17 @@ import static java.util.Arrays.*;
 import java.net.URI;
 import java.util.List;
 
+import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.MediaType;
 
 import lombok.Value;
 
 /**
  * Wraps the template for an http/https URI, where a resource is located, and a {@link RestContext configuration}. If
- * you create a {@link RestResource} without specifying the config, the {@link RestContext#DEFAULT_CONFIG default
- * config} is used. A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
+ * you create a {@link RestResource} without specifying the config, the {@link RestContext#REST default config} is used.
+ * A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
  */
+@Immutable
 @Value
 public class RestResource {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
@@ -22,19 +24,19 @@ public class RestResource {
     private final RestContext config;
     private final UriTemplate uri;
 
-    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#REST} */
     public RestResource(URI uri) {
         this(UriTemplate.fromString(uri.toString()));
     }
 
-    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#REST} */
     public RestResource(String uri) {
         this(UriTemplate.fromString(uri));
     }
 
-    /** resource for that uri, using the {@link RestContext#DEFAULT_CONFIG} */
+    /** resource for that uri, using the {@link RestContext#REST} */
     public RestResource(UriTemplate uri) {
-        this(DEFAULT_CONFIG, uri);
+        this(REST, uri);
     }
 
     public RestResource(RestContext config, URI uri) {
