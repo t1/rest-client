@@ -33,16 +33,14 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     @Override
     public boolean containsValue(Object value) {
         for (Header header : headers)
-            if (header.multiValue().equals(value))
+            if (header.value().equals(value))
                 return true;
         return false;
     }
 
     @Override
     public List<String> get(Object key) {
-        if (!containsKey(key))
-            return null;
-        return headers.header((String) key).multiValue();
+        return headers.values((String) key);
     }
 
     @Override
@@ -55,18 +53,16 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     @Override
     public List<String> remove(Object key) {
         String name = (String) key;
-        List<String> out = null;
-        if (headers.contains(name)) {
-            Headers newHeaders = new Headers();
-            for (Header header : headers) {
-                if (header.isNamed(name)) {
-                    out = header.multiValue();
-                } else {
-                    newHeaders = newHeaders.header(header.name(), header.value());
-                }
+        List<String> out = new ArrayList<>();
+        Headers newHeaders = new Headers();
+        for (Header header : headers) {
+            if (header.isNamed(name)) {
+                out.add(header.value());
+            } else {
+                newHeaders = newHeaders.header(header.name(), header.value());
             }
-            this.headers = newHeaders;
         }
+        this.headers = newHeaders;
         return out;
     }
 
@@ -92,10 +88,14 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public Collection<List<String>> values() {
-        Set<List<String>> set = new LinkedHashSet<>();
-        for (Header header : headers)
-            set.add(header.multiValue());
-        return unmodifiableSet(set);
+        Map<String, List<String>> map = new LinkedHashMap<>();
+        for (Header header : headers) {
+            String name = header.name();
+            List<String> list = (map.containsKey(name)) ? map.get(name) : new ArrayList<String>();
+            list.add(header.value());
+            map.put(name, list);
+        }
+        return unmodifiableCollection(map.values());
     }
 
     @Override
@@ -110,7 +110,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
                 @Override
                 public List<String> getValue() {
-                    return header.multiValue();
+                    return headers.values(header.name());
                 }
 
                 @Override
@@ -152,17 +152,12 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void add(String key, String value) {
-        String old = headers.value(key);
-        if (old != null) {
-            remove(key);
-            value = old + ", " + value;
-        }
         headers = headers.header(key, value);
     }
 
     @Override
     public String getFirst(String key) {
-        return headers.value(key);
+        return headers.firstValue(key);
     }
 
     @Override
@@ -181,23 +176,22 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
 
     @Override
     public void addFirst(String key, String value) {
-        String old = headers.value(key);
-        if (old != null) {
-            remove(key);
-            value = value + ", " + old;
-        }
+        List<String> oldValues = remove(key);
         headers = headers.header(key, value);
+        for (String oldValue : oldValues) {
+            headers = headers.header(key, oldValue);
+        }
     }
 
     @Override
     public boolean equalsIgnoreValueOrder(MultivaluedMap<String, String> otherMap) {
         if (otherMap.size() != headers.size())
             return false;
-        for (Header header : headers) {
-            List<String> otherValues = otherMap.get(header.name());
+        for (String name : headers.names()) {
+            List<String> otherValues = otherMap.get(name);
             if (otherValues == null)
                 return false;
-            Set<String> thisValues = asSet(header.multiValue());
+            Set<String> thisValues = asSet(headers.values(name));
             if (!thisValues.equals(asSet(otherValues))) {
                 return false;
             }
@@ -205,8 +199,8 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
         return true;
     }
 
-    private HashSet<String> asSet(List<String> list) {
-        return new HashSet<>(list);
+    private Set<String> asSet(List<String> list) {
+        return new LinkedHashSet<>(list);
     }
 
     @Override

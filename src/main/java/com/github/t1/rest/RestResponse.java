@@ -25,7 +25,7 @@ public abstract class RestResponse {
     }
 
     public Header header(String name) {
-        return headers.header(name);
+        return headers.firstHeader(name);
     }
 
     public MediaType contentType() {

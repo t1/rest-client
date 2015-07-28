@@ -8,7 +8,7 @@ import java.util.*;
 
 import javax.ws.rs.core.MediaType;
 
-import org.junit.*;
+import org.junit.Test;
 
 import com.github.t1.rest.Headers.Header;
 
@@ -65,8 +65,8 @@ public class HeadersTest {
         assertFalse(i.hasNext());
         assertEquals("Key", headers.getHeaderNames());
         assertEquals("Key: true", headers.toString());
-        assertEquals("true", headers.value("Key"));
-        assertEquals("true", headers.value("key"));
+        assertEquals("true", headers.firstValue("Key"));
+        assertEquals("true", headers.firstValue("key"));
         assertTrue(headers.contains("Key"));
         assertFalse(headers.isEmpty());
     }
@@ -110,10 +110,10 @@ public class HeadersTest {
         assertEquals("One: true & Two: 2", headers.toString());
         assertEquals("  One: true\n  Two: 2\n", headers.toListString());
 
-        assertEquals("true", headers.value("One"));
-        assertEquals("true", headers.value("one"));
-        assertEquals("2", headers.value("Two"));
-        assertEquals("2", headers.value("two"));
+        assertEquals("true", headers.firstValue("One"));
+        assertEquals("true", headers.firstValue("one"));
+        assertEquals("2", headers.firstValue("Two"));
+        assertEquals("2", headers.firstValue("two"));
     }
 
     @Test
@@ -133,9 +133,9 @@ public class HeadersTest {
         assertEquals("One: true & Two: 2 & Three: 3.0", headers.toString());
         assertEquals("  One: true\n  Two: 2\n  Three: 3.0\n", headers.toListString());
 
-        assertEquals("true", headers.value("One"));
-        assertEquals("2", headers.value("Two"));
-        assertEquals("3.0", headers.value("Three"));
+        assertEquals("true", headers.firstValue("One"));
+        assertEquals("2", headers.firstValue("Two"));
+        assertEquals("3.0", headers.firstValue("Three"));
     }
 
     @Test
@@ -151,31 +151,6 @@ public class HeadersTest {
         assertEquals(3, three.size());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldCheckForDuplicateHeaders() {
-        new Headers().header("Key", 1).header("Key", 2);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldCheckForDuplicateHeadersDifferentCase() {
-        new Headers().header("KEY", 1).header("key", 2);
-    }
-
-    @Test
-    @Ignore("maybe we shouldn't fail on duplicates but append... maybe for some headers only")
-    public void shouldCollectHeaders() {
-        Headers headers = new Headers().header("Key", 1).header("Key", 2);
-
-        assertEquals(1, headers.size());
-        Iterator<Header> i = headers.iterator();
-        assertTrue(i.hasNext());
-        assertEquals("Key: 1, 2", i.next().toString());
-        assertFalse(i.hasNext());
-        assertEquals("Key", headers.toString());
-
-        assertEquals("1", headers.value("Key"));
-    }
-
     @Test
     public void shouldAddAcceptHeader() {
         Map<String, String> properties = new HashMap<>();
@@ -183,18 +158,22 @@ public class HeadersTest {
         MediaType json = new MediaType("application", "json", properties);
         Headers headers = new Headers().accept(json, new MediaType("text", "html", "utf-8"));
 
-        assertEquals(1, headers.size());
+        assertEquals(2, headers.size());
         Iterator<Header> i = headers.iterator();
         assertTrue(i.hasNext());
-        assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", i.next().toString());
+        assertEquals("Accept: application/json;q=1.0", i.next().toString());
+        assertTrue(i.hasNext());
+        assertEquals("Accept: text/html;charset=utf-8", i.next().toString());
         assertFalse(i.hasNext());
         assertEquals("Accept", headers.getHeaderNames());
-        assertEquals("Accept: application/json;q=1.0, text/html;charset=utf-8", headers.toString());
+        assertEquals("Accept: application/json;q=1.0 & Accept: text/html;charset=utf-8", headers.toString());
 
-        assertEquals("application/json;q=1.0, text/html;charset=utf-8", headers.value("Accept"));
-        assertEquals(asList( //
-                MediaType.valueOf("application/json;q=1.0"), //
-                MediaType.valueOf("text/html;charset=utf-8")), //
+        assertEquals("text/html;charset=utf-8", headers.firstValue("Accept"));
+        assertEquals(asList("application/json;q=1.0", "text/html;charset=utf-8"), headers.values("Accept"));
+        assertEquals(
+                asList( //
+                        MediaType.valueOf("application/json;q=1.0"), //
+                        MediaType.valueOf("text/html;charset=utf-8")), //
                 headers.accept());
     }
 
@@ -215,7 +194,7 @@ public class HeadersTest {
         assertEquals("Content-Type", headers.getHeaderNames());
         assertEquals("Content-Type: text/html;charset=utf-8", headers.toString());
 
-        assertEquals("text/html;charset=utf-8", headers.value("Content-Type"));
+        assertEquals("text/html;charset=utf-8", headers.firstValue("Content-Type"));
     }
 
     @Test
@@ -255,4 +234,15 @@ public class HeadersTest {
         assertEquals("foo: {bar}", headers.toString());
         assertEquals("foo: foobar", resolved.toString());
     }
+
+    @Test
+    public void shouldCombineViaHeaders() {
+        Headers headers = new Headers().header("Via", "1.0 fred");
+
+        Headers headers2 = headers.header("Via", "1.1 nowhere.com (Apache/1.1)");
+
+        assertEquals("  Via: 1.0 fred, 1.1 nowhere.com (Apache/1.1)\n", headers2.toListString());
+    }
+
+    // TODO combine User-Agent headers with spaces
 }

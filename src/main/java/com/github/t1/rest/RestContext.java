@@ -9,8 +9,6 @@ import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 
-import org.jboss.weld.exceptions.UnsupportedOperationException;
-
 import com.github.t1.rest.UriTemplate.NonQuery;
 import com.github.t1.rest.fallback.*;
 

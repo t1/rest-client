@@ -468,9 +468,9 @@ public class HttpGetTest {
         RestRequest<Pojo> bar = base.header("foo", "bar");
         RestRequest<Pojo> baz = base.header("foo", "{foobar}").with("foobar", "baz");
 
-        assertEquals(null, base.headers().value("foo"));
-        assertEquals("bar", bar.headers().value("foo"));
-        assertEquals("baz", baz.headers().value("foo"));
+        assertEquals(null, base.headers().firstValue("foo"));
+        assertEquals("bar", bar.headers().firstValue("foo"));
+        assertEquals("baz", baz.headers().firstValue("foo"));
         assertNotEquals(bar, baz);
 
         assertEquals(bar, base.header("foo", "bar"));

@@ -12,7 +12,6 @@ import javax.ws.rs.core.MultivaluedMap;
 import org.junit.Test;
 
 public class HeadersMultivaluedMapTest {
-
     @Test
     public void shouldCreateEmptyMultivaluedMap() {
         Headers headers = new Headers();
@@ -25,7 +24,7 @@ public class HeadersMultivaluedMapTest {
         assertEquals(false, map.containsValue(TEXT_PLAIN));
         assertEquals(false, map.containsValue(TEXT_HTML));
         assertEquals(false, map.containsValue(asList(TEXT_PLAIN, TEXT_HTML)));
-        assertEquals(null, map.get("Accept"));
+        assertEquals(emptyList(), map.get("Accept"));
 
         Iterator<Map.Entry<String, List<String>>> entries = map.entrySet().iterator();
         assertFalse(entries.hasNext());
@@ -42,15 +41,12 @@ public class HeadersMultivaluedMapTest {
         Headers headers = new Headers().accept(TEXT_PLAIN_TYPE, TEXT_HTML_TYPE);
 
         MultivaluedMap<String, String> map = headers.toMultiValuedMap();
-        // MultivaluedMap<String, String> map = new MultivaluedHashMap<>();
-        // map.addAll("Accept", TEXT_PLAIN, TEXT_HTML);
 
-        assertEquals(1, map.size());
+        assertEquals(2, map.size());
         assertEquals(false, map.isEmpty());
         assertEquals(true, map.containsKey("Accept"));
-        assertEquals(false, map.containsValue(TEXT_PLAIN));
-        assertEquals(false, map.containsValue(TEXT_HTML));
-        assertEquals(true, map.containsValue(asList(TEXT_PLAIN, TEXT_HTML)));
+        assertEquals(true, map.containsValue(TEXT_PLAIN));
+        assertEquals(true, map.containsValue(TEXT_HTML));
         assertEquals(asList(TEXT_PLAIN, TEXT_HTML), map.get("Accept"));
 
         Iterator<Map.Entry<String, List<String>>> entries = map.entrySet().iterator();
@@ -74,21 +70,21 @@ public class HeadersMultivaluedMapTest {
         Headers headers = new Headers().accept(TEXT_PLAIN_TYPE, TEXT_HTML_TYPE);
 
         MultivaluedMap<String, String> map1 = headers.toMultiValuedMap();
-        assertEquals(map1, map1);
-        assertNotEquals(null, map1);
-
         MultivaluedMap<String, String> map2 = headers.toMultiValuedMap();
+
         assertFalse(map1 == map2);
+        assertEquals(map1, map2);
+        assertEquals(map2, map1);
+
+        assertEquals(map1.entrySet(), map2.entrySet());
+        assertEquals(map2.entrySet(), map1.entrySet());
+
         assertEquals(map1.get("Accept").get(0), map2.get("Accept").get(0));
         assertEquals(map2.get("Accept").get(0), map1.get("Accept").get(0));
         assertEquals(map1.get("Accept").get(1), map2.get("Accept").get(1));
         assertEquals(map2.get("Accept").get(1), map1.get("Accept").get(1));
         assertEquals(map1.get("Accept"), map2.get("Accept"));
         assertEquals(map2.get("Accept"), map1.get("Accept"));
-        assertEquals(map1.entrySet(), map2.entrySet());
-        assertEquals(map2.entrySet(), map1.entrySet());
-        assertEquals(map1, map2);
-        assertEquals(map2, map1);
     }
 
     @Test
@@ -272,6 +268,14 @@ public class HeadersMultivaluedMapTest {
         MultivaluedMap<String, String> map = new Headers().accept(TEXT_PLAIN_TYPE).toMultiValuedMap();
 
         assertNotEquals(map, "");
+    }
+
+    @Test
+    public void shouldCollectWithSameKeys() {
+        Headers headers = new Headers().header("foo", "bar").header("foo", "baz");
+        MultivaluedMap<String, String> map = headers.toMultiValuedMap();
+
+        assertEquals(asList("bar", "baz"), map.get("foo"));
     }
 
     // TODO write changes to HeadersMultivaluedMap#keySet()

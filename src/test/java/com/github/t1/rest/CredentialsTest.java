@@ -179,7 +179,7 @@ public class CredentialsTest {
 
         RestGetCall<?> request = config.createRestGetCall(baseUri, new Headers(), String.class);
 
-        String auth = request.requestHeaders().value("Authorization");
+        String auth = request.requestHeaders().firstValue("Authorization");
         assertEquals("Basic " + BASE64_CREDENTIALS, auth);
     }
 }

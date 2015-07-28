@@ -11,6 +11,7 @@ import static lombok.AccessLevel.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.ArrayList;
+import java.util.Map.Entry;
 
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.*;
@@ -62,8 +63,6 @@ public class Headers implements Iterable<Header> {
     private static final String CONTENT_LENGTH = "Content-Length";
     private static final String AUTHORIZATION = "Authorization";
 
-    private static final String WHITESPACE = "\\s*";
-
     @Immutable
     @Value
     public static class Header {
@@ -88,10 +87,6 @@ public class Headers implements Iterable<Header> {
         public boolean isNamed(String name) {
             return this.name.equalsIgnoreCase(name);
         }
-
-        public List<String> multiValue() {
-            return asList(value.split(WHITESPACE + "," + WHITESPACE));
-        }
     }
 
     private final Header head;
@@ -105,18 +100,10 @@ public class Headers implements Iterable<Header> {
     private Headers(Header head, Headers tail) {
         this.head = head;
         this.tail = tail;
-        if (head != null)
-            checkForDuplicates(head.name());
-        else
+        if (head == null)
             assert tail == null : "a null-header should have no tail";
-    }
-
-    private void checkForDuplicates(String name) {
-        if (tail.isEmpty())
-            return;
-        if (tail.head.isNamed(name))
-            throw new IllegalStateException(name + " header already set");
-        tail.checkForDuplicates(name);
+        if (tail != null)
+            assert head != null : "a non-null tail should have a non-null header";
     }
 
     /** is this a {@link #Headers empty} header */
@@ -125,26 +112,44 @@ public class Headers implements Iterable<Header> {
     }
 
     public Headers header(String name, Object value) {
-        if ("Via".equals(name)) // FIXME proper multi-header handling
-            return this;
-        return new Headers(new Header(name, value.toString()), this);
+        return header(new Header(name, value.toString()));
     }
 
-    public Header header(String name) {
+    public Headers header(Header header) {
+        return new Headers(header, this);
+    }
+
+    public Header firstHeader(String name) {
         if (head == null)
             return null;
         if (head.isNamed(name))
             return head;
-        return tail.header(name);
+        return tail.firstHeader(name);
     }
 
-    public String value(String name) {
-        Header header = header(name);
+    public Iterable<String> names() {
+        List<String> result = new ArrayList<>();
+        for (Header header : this)
+            if (!result.contains(header.name()))
+                result.add(header.name());
+        return unmodifiableList(result);
+    }
+
+    public String firstValue(String name) {
+        Header header = firstHeader(name);
         return (header == null) ? null : header.value();
     }
 
+    public List<String> values(String name) {
+        List<String> result = new ArrayList<>();
+        for (Header header : this)
+            if (header.isNamed(name))
+                result.add(header.value());
+        return unmodifiableList(result);
+    }
+
     public boolean contains(String name) {
-        return header(name) != null;
+        return firstHeader(name) != null;
     }
 
     public int size() {
@@ -167,11 +172,14 @@ public class Headers implements Iterable<Header> {
     }
 
     public String getHeaderNames() {
+        Set<String> result = new LinkedHashSet<>();
+        for (Header header : this)
+            result.add(header.name);
         StringBuilder out = new StringBuilder();
-        for (Header header : this) {
+        for (String name : result) {
             if (out.length() > 0)
                 out.append(", ");
-            out.append(header.name);
+            out.append(name);
         }
         return out.toString();
     }
@@ -189,8 +197,18 @@ public class Headers implements Iterable<Header> {
 
     public String toListString() {
         StringBuilder out = new StringBuilder();
-        for (Header header : this)
-            out.append("  ").append(header).append("\n");
+        for (Entry<String, List<String>> entry : toMultiValuedMap().entrySet()) {
+            out.append("  ").append(entry.getKey()).append(": ");
+            boolean first = true;
+            for (String value : entry.getValue()) {
+                if (first)
+                    first = false;
+                else
+                    out.append(", ");
+                out.append(value);
+            }
+            out.append("\n");
+        }
         return out.toString();
     }
 
@@ -211,7 +229,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public MediaType contentType() {
-        String contentType = value(CONTENT_TYPE);
+        String contentType = firstValue(CONTENT_TYPE);
         if (contentType == null)
             return WILDCARD_TYPE;
         if (contentType.startsWith("{") && contentType.endsWith(", q=1000}")) // Jersey/Dropwizard bug?
@@ -225,7 +243,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public Integer contentLength() {
-        String contentLength = value(CONTENT_LENGTH);
+        String contentLength = firstValue(CONTENT_LENGTH);
         if (contentLength == null)
             return null;
         return Integer.valueOf(contentLength);
@@ -237,18 +255,17 @@ public class Headers implements Iterable<Header> {
     }
 
     public Headers accept(List<MediaType> mediaTypes) {
-        StringBuilder out = new StringBuilder();
-        for (MediaType mediaType : mediaTypes) {
-            if (out.length() > 0)
-                out.append(", ");
-            out.append(mediaType);
-        }
-        return header(ACCEPT, out.toString());
+        if (mediaTypes.isEmpty())
+            throw new IllegalArgumentException("can't accept empty list of media types");
+        Headers result = this;
+        for (MediaType mediaType : mediaTypes)
+            result = result.header(ACCEPT, mediaType);
+        return result;
     }
 
     public List<MediaType> accept() {
         List<MediaType> result = new ArrayList<>();
-        for (String value : header(ACCEPT).multiValue()) {
+        for (String value : values(ACCEPT)) {
             result.add(MediaType.valueOf(value));
         }
         return result;
@@ -267,7 +284,7 @@ public class Headers implements Iterable<Header> {
     }
 
     public boolean isBasicAuth(Credentials credentials) {
-        return contains(AUTHORIZATION) && value(AUTHORIZATION).equals(basicAuthValue(credentials));
+        return contains(AUTHORIZATION) && firstValue(AUTHORIZATION).equals(basicAuthValue(credentials));
     }
 
     private String basicAuthValue(Credentials credentials) {
