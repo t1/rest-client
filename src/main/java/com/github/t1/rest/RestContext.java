@@ -29,20 +29,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Immutable
 public class RestContext {
-    private static final MessageBodyReaders DEFAULT_MESSAGE_BODY_READERS = MessageBodyReaders //
-            .of(new StringMessageBodyReader()) //
-            .and(new ByteArrayMessageBodyReader()) //
-            .and(new InputStreamMessageBodyReader()) //
-            .and(new YamlMessageBodyReader()) //
-            .and(new XmlMessageBodyReader()) //
-            .and(new JsonMessageBodyReader()) //
-            ;
-
     public static final RestContext REST = new RestContext();
 
     @Immutable
     @Value
     private static class MessageBodyReaders implements Iterable<MessageBodyReader<?>> {
+        private static MessageBodyReaders load() {
+            MessageBodyReaders result = MessageBodyReaders //
+                    .of(new StringMessageBodyReader()) //
+                    .and(new ByteArrayMessageBodyReader()) //
+                    .and(new InputStreamMessageBodyReader()) //
+                    .and(new YamlMessageBodyReader()) //
+                    .and(new XmlMessageBodyReader()) //
+                    .and(new JsonMessageBodyReader()) //
+                    ;
+            for (MessageBodyReader<?> reader : ServiceLoader.load(MessageBodyReader.class))
+                result = result.and(reader);
+            log.debug("loaded MessageBodyReaders:\n{}", result);
+            return result;
+        }
+
         public static MessageBodyReaders of(MessageBodyReader<?> head) {
             return new MessageBodyReaders(head, null);
         }
@@ -77,6 +83,26 @@ public class RestContext {
                 }
             };
         }
+
+        @Override
+        public String toString() {
+            StringBuilder out = new StringBuilder();
+            for (MessageBodyReader<?> reader : this) {
+                if (out.length() > 0)
+                    out.append("\n");
+                out.append(reader.getClass().getName());
+                Package p = reader.getClass().getPackage();
+                appendIfNotNull(out, p.getImplementationTitle());
+                appendIfNotNull(out, p.getImplementationVendor());
+                appendIfNotNull(out, p.getImplementationVersion());
+            }
+            return out.toString();
+        }
+
+        private void appendIfNotNull(StringBuilder out, Object object) {
+            if (object != null)
+                out.append(" ").append(object);
+        }
     }
 
     private final MessageBodyReaders readers;
@@ -87,7 +113,19 @@ public class RestContext {
 
 
     private RestContext() {
-        this(DEFAULT_MESSAGE_BODY_READERS, new RestCallFactory(), null, null);
+        this(MessageBodyReaders.load(), new RestCallFactory(), null, null);
+    }
+
+    /** for CDI */
+    @Inject
+    private RestContext( //
+            Instance<RestResourceRegistry> restResourceRegistryInstances,
+            Instance<CredentialsRegistry> credentialsRegistryInstances) {
+        this( //
+                MessageBodyReaders.load(), //
+                new RestCallFactory(), //
+                CombinedRestResourceRegistry.combine(restResourceRegistryInstances),
+                CombinedCredentialsRegistry.combine(credentialsRegistryInstances));
     }
 
     /** for the builders */
@@ -97,16 +135,6 @@ public class RestContext {
         this.restCallFactory = restCallFactory;
         this.restResourceRegistry = restResourceRegistry;
         this.credentialsRegistry = credentialsRegistry;
-    }
-
-    /** for CDI */
-    @Inject
-    private RestContext(Instance<RestResourceRegistry> restResourceRegistryInstances,
-            Instance<CredentialsRegistry> credentialsRegistryInstances) {
-        this.readers = DEFAULT_MESSAGE_BODY_READERS;
-        this.restCallFactory = new RestCallFactory();
-        this.restResourceRegistry = CombinedRestResourceRegistry.combine(restResourceRegistryInstances);
-        this.credentialsRegistry = CombinedCredentialsRegistry.combine(credentialsRegistryInstances);
     }
 
     public RestContext and(MessageBodyReader<?> reader) {

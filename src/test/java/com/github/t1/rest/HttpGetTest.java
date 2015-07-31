@@ -525,6 +525,5 @@ public class HttpGetTest {
     // TODO expecting via Response object
     // TODO full mappings (via joda-convert:struct)
     // TODO writers for PUT, POST, PATCH
-    // TODO use MessageBodyReaders from container, but they don't seem to be CDI beans; how can we detect them?
-    // TODO limit readers to ConstrainedTo annotation
+    // TODO limit MessageBodyReaders to ConstrainedTo annotation
 }
