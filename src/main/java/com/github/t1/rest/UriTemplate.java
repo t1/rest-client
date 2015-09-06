@@ -495,6 +495,22 @@ public abstract class UriTemplate {
         return null;
     }
 
+    public NonAuthority nonAuthority() {
+        return findPart(NonAuthority.class);
+    }
+
+    public NonPath nonPath() {
+        return findPart(NonPath.class);
+    }
+
+    public NonQuery nonQuery() {
+        return findPart(NonQuery.class);
+    }
+
+    public NonFragment nonFragment() {
+        return findPart(NonFragment.class);
+    }
+
     public String scheme() {
         return findPartString(UriScheme.class);
     }

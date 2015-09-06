@@ -168,6 +168,7 @@ public class RestContext {
             converter.addIfReadable(reader, contentType);
         if (converter.mediaTypes().isEmpty())
             throw new IllegalArgumentException("no MessageBodyReader found for " + type);
+        log.debug("use converter {} for {}@{}", converter, type, contentType);
         return converter;
     }
 
