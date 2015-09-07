@@ -16,7 +16,6 @@ import lombok.Data;
 public class TutorialTest {
     private static final URI BASE = URI.create("http://httpbin.org");
 
-
     @Test
     public void GET_as_String() {
         String body = new RestResource(BASE + "/get?foo=bar").GET();

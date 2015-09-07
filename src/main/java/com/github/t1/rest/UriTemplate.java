@@ -10,6 +10,9 @@ import java.util.regex.*;
 
 import javax.annotation.concurrent.Immutable;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.github.t1.rest.UriAuthority.HostBasedAuthority;
 
 import lombok.*;
@@ -17,9 +20,9 @@ import lombok.experimental.ExtensionMethod;
 
 /** Immutable, fluent, strictly appendable builder for URI templates. */
 @Immutable
-@EqualsAndHashCode
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
+@JsonSerialize(using = ToStringSerializer.class)
 public abstract class UriTemplate {
     private static final Pattern URI_PATTERN =
             Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
@@ -28,6 +31,7 @@ public abstract class UriTemplate {
         return fromString(uri.toString());
     }
 
+    @JsonCreator
     public static UriTemplate fromString(String uri) {
         Matcher matcher = URI_PATTERN.matcher(uri);
         if (!matcher.matches())
@@ -566,4 +570,16 @@ public abstract class UriTemplate {
 
     @Override
     public abstract String toString();
+
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof UriTemplate))
+            return false;
+        return toString().equals(obj.toString());
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
+    }
 }
