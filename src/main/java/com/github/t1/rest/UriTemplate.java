@@ -9,6 +9,8 @@ import java.util.List;
 import java.util.regex.*;
 
 import javax.annotation.concurrent.Immutable;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.*;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -23,6 +25,9 @@ import lombok.experimental.ExtensionMethod;
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 @JsonSerialize(using = ToStringSerializer.class)
+@NoArgsConstructor(force = true, access = PRIVATE)
+@XmlRootElement
+@XmlJavaTypeAdapter(UriTemplate.JaxbAdapter.class)
 public abstract class UriTemplate {
     private static final Pattern URI_PATTERN =
             Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
@@ -50,6 +55,18 @@ public abstract class UriTemplate {
         if (path.endsWith("/"))
             list = MethodExtensions.with(list, "");
         return list;
+    }
+
+    public static class JaxbAdapter extends XmlAdapter<String, UriTemplate> {
+        @Override
+        public UriTemplate unmarshal(String value) {
+            return UriTemplate.fromString(value);
+        }
+
+        @Override
+        public String marshal(UriTemplate value) {
+            return value.toString();
+        }
     }
 
     @Immutable
