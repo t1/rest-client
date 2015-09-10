@@ -19,7 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Consumes(APPLICATION_JSON)
 public class JsonMessageBodyReader implements MessageBodyReader<Object> {
     public static final ObjectMapper MAPPER = new ObjectMapper() //
-            .setSerializationInclusion(NON_EMPTY).configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+            .setSerializationInclusion(NON_EMPTY) //
+            .configure(FAIL_ON_UNKNOWN_PROPERTIES, false) //
+            .findAndRegisterModules();
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {

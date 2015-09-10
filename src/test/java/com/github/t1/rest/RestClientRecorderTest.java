@@ -16,14 +16,14 @@ public class RestClientRecorderTest {
     private static final Path TMP = Paths.get("target/recordings");
     private static final Credentials CREDENTIALS = new Credentials("foo", "bar");
 
-    private RestContext rest;
+    private RestContext recorder;
     private RestClientMocker mock;
 
     @Before
     public void before() {
         deleteRecordings();
         mock = new RestClientMocker(REST.register("base", BASE));
-        rest = new RestClientRecorder(mock.config(), TMP).config();
+        recorder = new RestClientRecorder(mock.config(), TMP).config();
     }
 
     @After
@@ -43,15 +43,15 @@ public class RestClientRecorderTest {
         mock.on(BASE + "/string").GET().respond("value-0");
         mock.on(BASE + "/string").GET().respond("value-1");
 
-        String initialBody = rest.resource("base", "/string").GET();
+        String initialBody = recorder.resource("base", "/string").GET();
 
-        assertEquals("value-1", initialBody);
+        assertEquals("save recording", "value-1", initialBody);
 
         mock.on(BASE + "/string").GET().respond("value-2");
 
-        String recordedBody = rest.resource("base", "/string").GET();
+        String recordedBody = recorder.resource("base", "/string").GET();
 
-        assertEquals("value-1", recordedBody);
+        assertEquals("return recorded", "value-1", recordedBody);
     }
 
     @Test
@@ -59,8 +59,8 @@ public class RestClientRecorderTest {
         mock.on(BASE + "/string-0").GET().respond("value-0");
         mock.on(BASE + "/string-1").GET().respond("value-1");
 
-        String body0 = rest.resource("base", "/string-0").GET();
-        String body1 = rest.resource("base", "/string-1").GET();
+        String body0 = recorder.resource("base", "/string-0").GET();
+        String body1 = recorder.resource("base", "/string-1").GET();
 
         assertEquals("value-0", body0);
         assertEquals("value-1", body1);
@@ -72,8 +72,8 @@ public class RestClientRecorderTest {
         mock.on(BASE + "/string").GET().requireBasicAuth(CREDENTIALS).respond("value-auth");
         mock.on(BASE + "/string").GET().respond("value-clear");
 
-        String bodyAuthorized = rest.resource("base", "/string").basicAuth(CREDENTIALS).GET(String.class);
-        String bodyClear = rest.resource("base", "/string").GET();
+        String bodyAuthorized = recorder.resource("base", "/string").basicAuth(CREDENTIALS).GET(String.class);
+        String bodyClear = recorder.resource("base", "/string").GET();
 
         assertEquals("value-auth", bodyAuthorized);
         assertEquals("value-clear", bodyClear);
