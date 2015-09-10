@@ -12,7 +12,7 @@ import lombok.*;
 @Data
 @RequiredArgsConstructor
 public abstract class RestResponse {
-    private final RestContext config;
+    private final RestContext context;
     private final StatusType status;
     private final Headers headers;
 

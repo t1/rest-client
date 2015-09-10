@@ -30,8 +30,8 @@ public class RestRequest<T> {
         return resource.authority();
     }
 
-    public RestContext config() {
-        return resource.config();
+    public RestContext context() {
+        return resource.context();
     }
 
     public URI uri() {
@@ -65,7 +65,7 @@ public class RestRequest<T> {
      * (as it indicates that a GET is executed), and anything else I could think of.
      */
     public EntityResponse<T> GET_Response() {
-        RestGetCall<T> request = config().createRestGetCall(uri(), headers, acceptedType());
+        RestGetCall<T> request = context().createRestGetCall(uri(), headers, acceptedType());
         return request.execute();
     }
 
@@ -74,11 +74,11 @@ public class RestRequest<T> {
     }
 
     public <U> RestRequest<U> accept(Class<U> acceptedType) {
-        return entityRequest(resource.config().converterFor(acceptedType));
+        return entityRequest(resource.context().converterFor(acceptedType));
     }
 
     public <U> RestRequest<U> accept(Class<?> first, Class<?>... more) {
-        ResponseConverter<U> otherConverter = resource.config().converterFor(first, more);
+        ResponseConverter<U> otherConverter = resource.context().converterFor(first, more);
         return entityRequest(otherConverter);
     }
 
@@ -89,7 +89,7 @@ public class RestRequest<T> {
      */
     @Deprecated
     public <U> RestRequest<U> accept(Class<U> acceptedType, MediaType contentType) {
-        return entityRequest(resource.config().converterFor(acceptedType, contentType));
+        return entityRequest(resource.context().converterFor(acceptedType, contentType));
     }
 
     private <U> RestRequest<U> entityRequest(ResponseConverter<U> converter) {

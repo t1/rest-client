@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
  * <li>The {@link RestCallFactory} to create requests</li>
  * <li>The readers to convert bodies from their {@link MediaType} to the target object</li>
  * </ul>
- * For most applications, one of these is enough, so there's a default config: {@link #REST}.
+ * For most applications, one of these is enough, so there's a default context: {@link #REST}.
  */
 @Slf4j
 @Immutable
@@ -267,7 +267,7 @@ public class RestContext {
 
     @Override
     public String toString() {
-        return "config" //
+        return "context" //
                 + "(" + ((restResourceRegistry == null) ? "no aliases" : restResourceRegistry.names()) + ")" //
                 + "(" + ((credentialsRegistry == null) ? "no credentials" : credentialsRegistry.uris()) + ")" //
                 ;

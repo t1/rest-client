@@ -112,7 +112,7 @@ public class RestClientRecorder {
         private final RestGetCall<T> delegate;
 
         public RestGetCallDecorator(RestGetCall<T> delegate) {
-            super(delegate.config(), delegate.uri(), delegate.requestHeaders(), null, delegate.converter());
+            super(delegate.context(), delegate.uri(), delegate.requestHeaders(), null, delegate.converter());
             this.delegate = delegate;
         }
 
@@ -158,24 +158,24 @@ public class RestClientRecorder {
             Recording recording = recordings().find(uri(), requestHeaders());
             if (recording == null)
                 return super.execute();
-            return new EntityResponse<>(config(), recording.responseStatus(), recording.responseHeaders(), converter(),
+            return new EntityResponse<>(context(), recording.responseStatus(), recording.responseHeaders(), converter(),
                     recording.responseBody().getBytes());
         }
     }
 
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
-        public <T> RestGetCall<T> createRestGetCall(RestContext config, URI uri, Headers headers,
+        public <T> RestGetCall<T> createRestGetCall(RestContext context, URI uri, Headers headers,
                 ResponseConverter<T> converter) {
             log.info("forward request of {} to real target", uri);
             return new PlaybackRestGetCall<>( //
                     new RecorderRestGetCall<>( //
-                            originalRequestFactory.createRestGetCall(config, uri, headers, converter)));
+                            originalRequestFactory.createRestGetCall(context, uri, headers, converter)));
         }
     };
 
     @Getter
-    private final RestContext config;
+    private final RestContext context;
     private final Path folder;
     private final RestCallFactory originalRequestFactory;
 
@@ -183,17 +183,17 @@ public class RestClientRecorder {
         this(REST);
     }
 
-    public RestClientRecorder(RestContext config) {
-        this(config, DEFAULT_FOLDER);
+    public RestClientRecorder(RestContext context) {
+        this(context, DEFAULT_FOLDER);
     }
 
     public RestClientRecorder(Path folder) {
         this(REST, folder);
     }
 
-    public RestClientRecorder(RestContext config, Path folder) {
-        this.originalRequestFactory = config.restCallFactory();
-        this.config = config.restCallFactory(requestFactoryMock);
+    public RestClientRecorder(RestContext context, Path folder) {
+        this.originalRequestFactory = context.restCallFactory();
+        this.context = context.restCallFactory(requestFactoryMock);
         this.folder = folder;
     }
 }

@@ -10,9 +10,9 @@ public class EntityResponse<T> extends RestResponse {
     private final ResponseConverter<T> converter;
     private final byte[] body;
 
-    public EntityResponse(RestContext config, StatusType status, Headers headers, ResponseConverter<T> converter,
+    public EntityResponse(RestContext context, StatusType status, Headers headers, ResponseConverter<T> converter,
             byte[] body) {
-        super(config, status, headers);
+        super(context, status, headers);
         this.body = body;
         this.converter = converter;
     }
@@ -28,7 +28,7 @@ public class EntityResponse<T> extends RestResponse {
     }
 
     public <U> U get(Class<U> type) {
-        ResponseConverter<U> otherConverter = config().converterFor(type);
+        ResponseConverter<U> otherConverter = context().converterFor(type);
         return otherConverter.convert(inputStream(), headers());
     }
 

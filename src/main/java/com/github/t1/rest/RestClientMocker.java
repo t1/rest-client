@@ -54,9 +54,9 @@ public class RestClientMocker {
             return this;
         }
 
-        public <T> RestGetCall<T> createGetRequest(final RestContext config, URI uri, final Headers requestHeaders,
+        public <T> RestGetCall<T> createGetRequest(final RestContext context, URI uri, final Headers requestHeaders,
                 final ResponseConverter<T> converter) {
-            return new RestGetCall<T>(config, uri, requestHeaders, null, converter) {
+            return new RestGetCall<T>(context, uri, requestHeaders, null, converter) {
                 private Headers responseHeaders = new Headers();
 
                 @Override
@@ -68,7 +68,7 @@ public class RestClientMocker {
                 }
 
                 private EntityResponse<T> response(Status status, byte[] body) {
-                    return new EntityResponse<>(config, status, new Headers(), converter, body);
+                    return new EntityResponse<>(context, status, new Headers(), converter, body);
                 }
 
                 @SneakyThrows(JsonProcessingException.class)
@@ -99,17 +99,17 @@ public class RestClientMocker {
     }
 
     @Getter
-    private final RestContext config;
+    private final RestContext context;
     private final Map<URI, RequestMock> mockedUris = new LinkedHashMap<>();
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
-        public <T> RestGetCall<T> createRestGetCall(RestContext config, URI uri, Headers headers,
+        public <T> RestGetCall<T> createRestGetCall(RestContext context, URI uri, Headers headers,
                 ResponseConverter<T> converter) {
             if (!mockedUris.containsKey(uri))
                 throw new IllegalArgumentException("unmocked createGetRequest on " + uri + "\n" //
                         + "only know: " + mockedUris.keySet());
             RequestMock requestMock = mockedUris.get(uri);
-            return requestMock.createGetRequest(config, uri, headers, converter);
+            return requestMock.createGetRequest(context, uri, headers, converter);
         }
     };
 
@@ -117,8 +117,8 @@ public class RestClientMocker {
         this(REST);
     }
 
-    public RestClientMocker(RestContext config) {
-        this.config = config.restCallFactory(requestFactoryMock);
+    public RestClientMocker(RestContext context) {
+        this.context = context.restCallFactory(requestFactoryMock);
     }
 
     public ResourceMock on(String uri) {

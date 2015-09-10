@@ -19,9 +19,9 @@ class RestGetCall<T> extends RestCall {
     @Getter
     private final ResponseConverter<T> converter;
 
-    public RestGetCall(RestContext config, URI uri, Headers requestHeaders, CloseableHttpClient apacheClient,
+    public RestGetCall(RestContext context, URI uri, Headers requestHeaders, CloseableHttpClient apacheClient,
             ResponseConverter<T> converter) {
-        super(config, uri, requestHeaders, apacheClient, new HttpGet(uri));
+        super(context, uri, requestHeaders, apacheClient, new HttpGet(uri));
         this.converter = converter;
     }
 
@@ -38,6 +38,6 @@ class RestGetCall<T> extends RestCall {
         Headers responseHeaders = convert(apacheResponse.getAllHeaders());
         HttpEntity entity = apacheResponse.getEntity();
         byte[] body = (entity == null) ? null : readAll(entity.getContent());
-        return new EntityResponse<>(config(), status, responseHeaders, converter, body);
+        return new EntityResponse<>(context(), status, responseHeaders, converter, body);
     }
 }

@@ -22,7 +22,7 @@ public class RestClientMockerTest {
     private static final Pojo POJO = new Pojo("k", "v");
 
     public final RestClientMocker mock = new RestClientMocker();
-    public final RestContext rest = mock.config();
+    public final RestContext rest = mock.context();
 
     @Test
     public void shouldGetString() {

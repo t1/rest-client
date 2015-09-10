@@ -35,7 +35,7 @@ abstract class RestCall {
     }
 
     @Getter
-    private final RestContext config;
+    private final RestContext context;
     @Getter
     private final URI uri;
     @Getter
@@ -43,9 +43,9 @@ abstract class RestCall {
     private final CloseableHttpClient apacheClient;
     private final HttpRequestBase request;
 
-    public RestCall(RestContext config, URI uri, Headers requestHeaders, CloseableHttpClient apacheClient,
+    public RestCall(RestContext context, URI uri, Headers requestHeaders, CloseableHttpClient apacheClient,
             HttpRequestBase request) {
-        this.config = config;
+        this.context = context;
         this.uri = uri;
         this.requestHeaders = requestHeaders;
         this.apacheClient = apacheClient;

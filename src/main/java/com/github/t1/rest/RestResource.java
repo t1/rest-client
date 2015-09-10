@@ -12,16 +12,16 @@ import javax.ws.rs.core.MediaType;
 import lombok.Value;
 
 /**
- * Wraps the template for an http/https URI, where a resource is located, and a {@link RestContext configuration}. If
- * you create a {@link RestResource} without specifying the config, the {@link RestContext#REST default config} is used.
- * A {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
+ * Wraps the template for an http/https URI, where a resource is located, and a {@link RestContext context}. If you
+ * create a {@link RestResource} without specifying the context, the {@link RestContext#REST default context} is used. A
+ * {@link RestResource} is the factory for creating {@link RestRequest}s of various kinds.
  */
 @Immutable
 @Value
 public class RestResource {
     private static final List<String> ALLOWED_SCHEMES = asList("http", "https");
 
-    private final RestContext config;
+    private final RestContext context;
     private final UriTemplate uri;
 
     /** resource for that uri, using the {@link RestContext#REST} */
@@ -39,17 +39,17 @@ public class RestResource {
         this(REST, uri);
     }
 
-    public RestResource(RestContext config, URI uri) {
-        this(config, UriTemplate.fromString(uri.toString()));
+    public RestResource(RestContext context, URI uri) {
+        this(context, UriTemplate.fromString(uri.toString()));
     }
 
-    public RestResource(RestContext config, String uri) {
-        this(config, UriTemplate.fromString(uri));
+    public RestResource(RestContext context, String uri) {
+        this(context, UriTemplate.fromString(uri));
     }
 
-    public RestResource(RestContext config, UriTemplate uri) {
+    public RestResource(RestContext context, UriTemplate uri) {
         this.uri = check(uri);
-        this.config = config;
+        this.context = context;
     }
 
     public String authority() {
@@ -93,7 +93,7 @@ public class RestResource {
     }
 
     public RestResource with(String name, Object value) {
-        return new RestResource(config, uri.with(name, value));
+        return new RestResource(context, uri.with(name, value));
     }
 
     /**

@@ -23,7 +23,7 @@ public class RestClientRecorderTest {
     public void before() {
         deleteRecordings();
         mock = new RestClientMocker(REST.register("base", BASE));
-        recorder = new RestClientRecorder(mock.config(), TMP).config();
+        recorder = new RestClientRecorder(mock.context(), TMP).context();
     }
 
     @After
