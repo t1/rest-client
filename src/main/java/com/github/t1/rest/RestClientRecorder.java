@@ -31,13 +31,35 @@ public class RestClientRecorder {
 
     @Data
     @RequiredArgsConstructor
-    private static class Recordings {
+    public static class Recordings {
         private static final CollectionType RECORDING_LIST =
                 MAPPER.getTypeFactory().constructCollectionType(List.class, Recording.class);
 
-        public static Recordings load(Path folder, String authority) {
-            Path file = folder.resolve(authority);
-            return new Recordings(file).load();
+        private static Map<String, Recordings> CACHE = new HashMap<>();
+
+        public static Recordings get(Path folder, String authority) {
+            Recordings result = CACHE.get(authority);
+            if (result == null) {
+                Path file = (folder == null) ? null : folder.resolve(authority);
+                log.debug("create/load recordings for {} -> {}", authority, file);
+                result = new Recordings(file).load();
+                CACHE.put(authority, result);
+            }
+            return result;
+        }
+
+        public static void clearAll() {
+            for (String authority : CACHE.keySet())
+                clear(authority);
+        }
+
+        @SneakyThrows(IOException.class)
+        public static void clear(String authority) {
+            Recordings existing = CACHE.remove(authority);
+            if (existing != null && existing.file != null) {
+                log.debug("clear recordings for {}", authority);
+                Files.delete(existing.file);
+            }
         }
 
         private final Path file;
@@ -45,9 +67,11 @@ public class RestClientRecorder {
 
         @SneakyThrows(IOException.class)
         private Recordings load() {
-            if (Files.exists(file))
+            if (file != null && Files.exists(file))
                 try (BufferedReader reader = Files.newBufferedReader(file, UTF_8)) {
+                    log.debug("loaded recordings from {}", file);
                     this.recordings = MAPPER.readValue(reader, RECORDING_LIST);
+                    log.debug("loaded {} recordings", recordings.size());
                 }
             else
                 recordings = new ArrayList<>();
@@ -67,9 +91,10 @@ public class RestClientRecorder {
 
         @SneakyThrows(IOException.class)
         public void write() {
-            try (BufferedWriter writer = Files.newBufferedWriter(file, UTF_8)) {
-                MAPPER.writeValue(writer, recordings);
-            }
+            if (file != null)
+                try (BufferedWriter writer = Files.newBufferedWriter(file, UTF_8)) {
+                    MAPPER.writeValue(writer, recordings);
+                }
         }
 
         public Recording find(URI uri, Headers requestHeaders) {
@@ -122,7 +147,7 @@ public class RestClientRecorder {
         }
 
         protected Recordings recordings() {
-            return Recordings.load(folder, uri().getAuthority());
+            return Recordings.get(folder, uri().getAuthority());
         }
     }
 
@@ -136,6 +161,7 @@ public class RestClientRecorder {
             Recording recording = new Recording();
             recording.uri(uri()).requestHeaders(requestHeaders());
 
+            log.debug("record GET for {}", uri());
             EntityResponse<T> response = super.execute();
 
             recording.responseStatus((Status) response.status()); // not perfect, but StatusType can't be deserialized
@@ -144,6 +170,7 @@ public class RestClientRecorder {
 
             recordings().addOrReplace(recording).write();
 
+            log.debug("recorded {}", recording);
             return response;
         }
     }
@@ -158,6 +185,7 @@ public class RestClientRecorder {
             Recording recording = recordings().find(uri(), requestHeaders());
             if (recording == null)
                 return super.execute();
+            log.debug("playback GET for {}", uri());
             return new EntityResponse<>(context(), recording.responseStatus(), recording.responseHeaders(), converter(),
                     recording.responseBody().getBytes());
         }
@@ -167,7 +195,7 @@ public class RestClientRecorder {
         @Override
         public <T> RestGetCall<T> createRestGetCall(RestContext context, URI uri, Headers headers,
                 ResponseConverter<T> converter) {
-            log.info("forward request of {} to real target", uri);
+            log.info("create rest GET call for {}", uri);
             return new PlaybackRestGetCall<>( //
                     new RecorderRestGetCall<>( //
                             originalRequestFactory.createRestGetCall(context, uri, headers, converter)));

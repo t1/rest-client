@@ -16,14 +16,12 @@ public class RestClientRecorderTest {
     private static final Path TMP = Paths.get("target/recordings");
     private static final Credentials CREDENTIALS = new Credentials("foo", "bar");
 
-    private RestContext recorder;
     private RestClientMocker mock;
 
     @Before
     public void before() {
         deleteRecordings();
         mock = new RestClientMocker(REST.register("base", BASE));
-        recorder = new RestClientRecorder(mock.context(), TMP).context();
     }
 
     @After
@@ -37,9 +35,28 @@ public class RestClientRecorderTest {
         Files.createDirectories(TMP);
     }
 
+    private RestContext recorder(Path folder) {
+        return new RestClientRecorder(mock.context(), folder).context();
+    }
 
     @Test
-    public void shouldRecordAndPlayback() {
+    public void shouldRecordAndPlaybackFromMemory() {
+        RestContext recorder = recorder(null);
+        mock.on(BASE + "/string").GET().respond("value-0"); // make sure the mock return only the last body
+        mock.on(BASE + "/string").GET().respond("value-1");
+
+        String initialBody = recorder.resource("base", "/string").GET();
+        assertEquals("save recording", "value-1", initialBody);
+
+        mock.on(BASE + "/string").GET().respond("value-2");
+
+        String recordedBody = recorder.resource("base", "/string").GET();
+        assertEquals("return recorded", "value-1", recordedBody);
+    }
+
+    @Test
+    public void shouldRecordAndPlaybackFromFile() {
+        RestContext recorder = recorder(TMP);
         mock.on(BASE + "/string").GET().respond("value-0");
         mock.on(BASE + "/string").GET().respond("value-1");
 
@@ -56,6 +73,7 @@ public class RestClientRecorderTest {
 
     @Test
     public void shouldRecordTwoPaths() {
+        RestContext recorder = recorder(TMP);
         mock.on(BASE + "/string-0").GET().respond("value-0");
         mock.on(BASE + "/string-1").GET().respond("value-1");
 
@@ -68,7 +86,8 @@ public class RestClientRecorderTest {
 
     @Test
     @Ignore("the mock can't handle this, yet")
-    public void shouldRecordTwoDifferentHeaders() {
+    public void shouldRecordTwoDifferentRequestHeaders() {
+        RestContext recorder = recorder(TMP);
         mock.on(BASE + "/string").GET().requireBasicAuth(CREDENTIALS).respond("value-auth");
         mock.on(BASE + "/string").GET().respond("value-clear");
 

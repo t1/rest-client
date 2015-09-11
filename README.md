@@ -2,6 +2,8 @@
 
 There are many http clients out there. This yet another one.
 
+To me, it's an experiment as to how simple a restful api can be for Java developers.
+
 Internally, it uses Apache http-client.
 
 ## Disclaimer
@@ -28,7 +30,7 @@ It's still 1.0.0-SNAPSHOT. The API can change in incompatible ways any time. Any
 
 ## Principles
 
-And it's based on the very same principles as the client api of JAX-RS 2.0, but a little bit easier to use. Most notably, you don't have to specify the content type you can accept; this is derived from the available MessageBodyReaders for the type you want to get.
+This rest-client is based on the very same principles as the client api of JAX-RS 2.0, but a little bit easier to use. Most notably, you don't have to specify the content type you can accept; this is derived from the available MessageBodyReaders for the type you want to get.
 
 ### Build forward, link backward
 
