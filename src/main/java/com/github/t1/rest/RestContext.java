@@ -28,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Immutable
+@RequiredArgsConstructor
 public class RestContext {
     public static final RestContext REST = new RestContext();
 
@@ -126,15 +127,6 @@ public class RestContext {
                 new RestCallFactory(), //
                 CombinedRestResourceRegistry.combine(restResourceRegistryInstances),
                 CombinedCredentialsRegistry.combine(credentialsRegistryInstances));
-    }
-
-    /** for the builders */
-    private RestContext(MessageBodyReaders readers, RestCallFactory restCallFactory,
-            RestResourceRegistry restResourceRegistry, CredentialsRegistry credentialsRegistry) {
-        this.readers = readers;
-        this.restCallFactory = restCallFactory;
-        this.restResourceRegistry = restResourceRegistry;
-        this.credentialsRegistry = credentialsRegistry;
     }
 
     public RestContext and(MessageBodyReader<?> reader) {
