@@ -42,7 +42,8 @@ public class StaticCredentialsRegistry extends CredentialsRegistry {
     public List<URI> uris() {
         List<URI> list = new ArrayList<>();
         list.add(uri);
-        list.addAll(tail.uris());
+        if (tail != null)
+            list.addAll(tail.uris());
         return list;
     }
 }
