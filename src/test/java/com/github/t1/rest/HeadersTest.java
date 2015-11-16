@@ -14,13 +14,11 @@ import com.github.t1.rest.Headers.Header;
 
 public class HeadersTest {
     @Test(expected = IllegalArgumentException.class)
-    @SuppressWarnings("unused")
     public void shouldFailToCreateHeaderWithNullName() {
         new Headers.Header(null, "foo");
     }
 
     @Test(expected = IllegalArgumentException.class)
-    @SuppressWarnings("unused")
     public void shouldFailToCreateHeaderWithNullValue() {
         new Headers.Header("foo", null);
     }

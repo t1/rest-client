@@ -219,7 +219,6 @@ public class HttpGetTest {
         return base(path).accept(type, mediaType);
     }
 
-    @SuppressWarnings("unused")
     @Test(expected = RuntimeException.class)
     public void shouldFailParsingUnsupportedScheme() {
         new RestResource("mailto:test@example.com");
