@@ -25,6 +25,7 @@ import lombok.experimental.ExtensionMethod;
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
 @JsonSerialize(using = ToStringSerializer.class)
+@org.codehaus.jackson.map.annotate.JsonSerialize(using = org.codehaus.jackson.map.ser.std.ToStringSerializer.class)
 @NoArgsConstructor(force = true, access = PRIVATE)
 @XmlRootElement
 @XmlJavaTypeAdapter(UriTemplate.JaxbAdapter.class)
@@ -37,6 +38,7 @@ public abstract class UriTemplate {
     }
 
     @JsonCreator
+    @org.codehaus.jackson.annotate.JsonCreator
     public static UriTemplate fromString(String uri) {
         Matcher matcher = URI_PATTERN.matcher(uri);
         if (!matcher.matches())
