@@ -16,7 +16,7 @@
     </properties>
 
     <scm>
-        <developerConnection>scm:git:https://github.com/t1/structure-converter</developerConnection>
+        <developerConnection>scm:git:https://github.com/t1/rest-client</developerConnection>
         <tag>HEAD</tag>
     </scm>
 
