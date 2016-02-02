@@ -1,5 +1,5 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.t1</groupId>
@@ -19,6 +19,20 @@
         <developerConnection>scm:git:https://github.com/t1/rest-client</developerConnection>
         <tag>HEAD</tag>
     </scm>
+    <licenses>
+        <license>
+            <name>Apache License 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+    <distributionManagement>
+        <repository>
+            <id>bintray-t1-javaee-helpers</id>
+            <name>t1-javaee-helpers-rest-client</name>
+            <url>https://api.bintray.com/maven/t1/javaee-helpers/rest-client/;publish=1</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <finalName>${project.artifactId}</finalName>
@@ -80,7 +94,7 @@
             <scope>provided</scope>
             <optional>true</optional>
         </dependency>
-        
+
         <!-- compile scope -->
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
