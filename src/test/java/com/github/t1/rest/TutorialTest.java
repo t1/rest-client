@@ -1,16 +1,15 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestContext.*;
-import static javax.ws.rs.core.Response.Status.*;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.*;
+import lombok.Data;
+import org.junit.*;
 
 import java.net.URI;
 import java.util.*;
 
-import org.junit.*;
-
-import lombok.Data;
+import static com.github.t1.rest.RestContext.*;
+import static javax.ws.rs.core.Response.Status.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.*;
 
 @Ignore("requires internet connection")
 public class TutorialTest {
@@ -20,8 +19,8 @@ public class TutorialTest {
     public void GET_as_String() {
         String body = new RestResource(BASE + "/get?foo=bar").GET();
 
-        assertThat(body.replace('\"', '\'').replaceAll("\\s", "")) //
-                .matches(".*'args':\\{'foo':'bar'\\}.*") //
+        assertThat(body.replace('\"', '\'').replaceAll("\\s", ""))
+                .matches(".*'args':\\{'foo':'bar'\\}.*")
                 .matches(".*'url':'" + BASE + "/get\\?foo=bar'.*");
     }
 
@@ -63,11 +62,10 @@ public class TutorialTest {
 
     @Test
     public void build_registry_and_add_path_and_GET() {
-        RestContext rest = REST //
-                .register("google", "http://google.com") //
-                .register("httpbin", BASE) //
-                .register("apple", "http://apple.com") //
-                ;
+        RestContext rest = REST
+                .register("google", "http://google.com")
+                .register("httpbin", BASE)
+                .register("apple", "http://apple.com");
 
         HttpBinGetResponse pojo = rest.resource("httpbin", "/get").GET(HttpBinGetResponse.class);
 
@@ -93,8 +91,8 @@ public class TutorialTest {
 
     @Test
     public void GET_with_basic_auth() {
-        RestContext rest = REST //
-                .register("httpbin", BASE + "/basic-auth/foo/bar") //
+        RestContext rest = REST
+                .register("httpbin", BASE + "/basic-auth/foo/bar")
                 .register(BASE, new Credentials("foo", "bar"));
 
         AuthenticatedPage page = rest.resource("httpbin").GET(AuthenticatedPage.class);

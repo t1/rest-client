@@ -1,14 +1,12 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.MethodExtensions.*;
-
-import java.util.regex.*;
+import com.github.t1.rest.UriTemplate.NonPath;
+import lombok.*;
 
 import javax.annotation.concurrent.Immutable;
+import java.util.regex.*;
 
-import com.github.t1.rest.UriTemplate.NonPath;
-
-import lombok.*;
+import static com.github.t1.rest.PathVariableExpression.*;
 
 @Immutable
 public abstract class UriAuthority extends NonPath {
@@ -17,14 +15,14 @@ public abstract class UriAuthority extends NonPath {
     }
 
     // http://www.ietf.org/rfc/rfc2396.txt ... some, probably esoteric cases are not supported
-    private static final Pattern HOST_BASED_PATTERN = Pattern.compile("" //
-            + "((?<userinfo>(([\\p{Alnum};:&=+$,%]+|\\{.+\\})).*)@)?" //
-            + "(?<host>(([\\p{Alnum}.-]+|[0-9:.]+|\\{.+\\})))" //
-            + "(:(?<port>([0-9]+|\\{.+\\})))?" //
+    private static final Pattern HOST_BASED_PATTERN = Pattern.compile(""
+            + "((?<userinfo>(([\\p{Alnum};:&=+$,%]+|\\{.+\\})).*)@)?"
+            + "(?<host>(([\\p{Alnum}.-]+|[0-9:.]+|\\{.+\\})))"
+            + "(:(?<port>([0-9]+|\\{.+\\})))?"
             + "(?<more>[/?].*)?");
 
-    private static final Pattern REGISTRY_BASED_PATTERN = Pattern.compile("" //
-            + "(?<name>(.*?))" //
+    private static final Pattern REGISTRY_BASED_PATTERN = Pattern.compile(""
+            + "(?<name>(.*?))"
             + "(?<more>[/?].*)?");
 
     public static UriAuthority authority(NonAuthority scheme, String authority) {
@@ -49,10 +47,9 @@ public abstract class UriAuthority extends NonPath {
     }
 
     private static HostBasedAuthority hostBasedAuthority(NonAuthority scheme, Matcher matcher) {
-        return new HostBasedAuthority(scheme, matcher.group("userinfo")). //
-                host(matcher.group("host")). //
-                port(matcher.group("port")) //
-                ;
+        return new HostBasedAuthority(scheme, matcher.group("userinfo"))
+                .host(matcher.group("host"))
+                .port(matcher.group("port"));
     }
 
     @Immutable
@@ -78,7 +75,7 @@ public abstract class UriAuthority extends NonPath {
 
         @Override
         public RegistryBasedAuthority with(String name, Object value) {
-            return new RegistryBasedAuthority((NonAuthority) previous.with(name, value), //
+            return new RegistryBasedAuthority((NonAuthority) previous.with(name, value),
                     replaceVariable(this.registryName, name, value));
         }
     }
@@ -120,17 +117,17 @@ public abstract class UriAuthority extends NonPath {
 
         @Override
         public String get() {
-            return ((userInfo == null) ? "" : userInfo + "@") //
-                    + host //
+            return ((userInfo == null) ? "" : userInfo + "@")
+                    + host
                     + ((port == null) ? "" : ":" + port);
         }
 
         @Override
         public HostBasedAuthority with(String name, Object value) {
-            return new HostBasedAuthority((NonAuthority) previous.with(name, value), //
-                    replaceVariable(this.userInfo, name, value)) //
-                            .host(replaceVariable(this.host, name, value)) //
-                            .port(replaceVariable(this.port, name, value));
+            return new HostBasedAuthority((NonAuthority) previous.with(name, value),
+                    replaceVariable(this.userInfo, name, value))
+                    .host(replaceVariable(this.host, name, value))
+                    .port(replaceVariable(this.port, name, value));
         }
     }
 }

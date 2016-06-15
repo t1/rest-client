@@ -1,19 +1,17 @@
 package com.github.t1.rest;
 
-import java.net.URI;
-import java.util.*;
+import com.github.t1.rest.UriTemplate.NonQuery;
+import com.github.t1.rest.fallback.*;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.concurrent.Immutable;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
-
-import com.github.t1.rest.UriTemplate.NonQuery;
-import com.github.t1.rest.fallback.*;
-
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import java.net.URI;
+import java.util.*;
 
 /**
  * Holds the configuration that applies to a set of {@link RestResource}s:
@@ -36,14 +34,13 @@ public class RestContext {
     @Value
     private static class MessageBodyReaders implements Iterable<MessageBodyReader<?>> {
         private static MessageBodyReaders load() {
-            MessageBodyReaders result = MessageBodyReaders //
-                    .of(new StringMessageBodyReader()) //
-                    .and(new ByteArrayMessageBodyReader()) //
-                    .and(new InputStreamMessageBodyReader()) //
-                    .and(new YamlMessageBodyReader()) //
-                    .and(new XmlMessageBodyReader()) //
-                    .and(new JsonMessageBodyReader()) //
-                    ;
+            MessageBodyReaders result = MessageBodyReaders
+                    .of(new StringMessageBodyReader())
+                    .and(new ByteArrayMessageBodyReader())
+                    .and(new InputStreamMessageBodyReader())
+                    .and(new YamlMessageBodyReader())
+                    .and(new XmlMessageBodyReader())
+                    .and(new JsonMessageBodyReader());
             for (MessageBodyReader<?> reader : ServiceLoader.load(MessageBodyReader.class))
                 result = result.and(reader);
             log.debug("loaded MessageBodyReaders:\n{}", result);
@@ -119,12 +116,12 @@ public class RestContext {
 
     /** for CDI */
     @Inject
-    private RestContext( //
+    private RestContext(
             Instance<RestResourceRegistry> restResourceRegistryInstances,
             Instance<CredentialsRegistry> credentialsRegistryInstances) {
-        this( //
-                MessageBodyReaders.load(), //
-                new RestCallFactory(), //
+        this(
+                MessageBodyReaders.load(),
+                new RestCallFactory(),
                 CombinedRestResourceRegistry.combine(restResourceRegistryInstances),
                 CombinedCredentialsRegistry.combine(credentialsRegistryInstances));
     }
@@ -156,7 +153,7 @@ public class RestContext {
     @Deprecated
     public <T> ResponseConverter<T> converterFor(Class<T> type, MediaType contentType) {
         ResponseConverter<T> converter = new ResponseConverter<>(type);
-        for (MessageBodyReader<T> reader : this.<T> readers())
+        for (MessageBodyReader<T> reader : this.<T>readers())
             converter.addIfReadable(reader, contentType);
         if (converter.mediaTypes().isEmpty())
             throw new IllegalArgumentException("no MessageBodyReader found for " + type);
@@ -259,9 +256,9 @@ public class RestContext {
 
     @Override
     public String toString() {
-        return "context" //
-                + "(" + ((restResourceRegistry == null) ? "no aliases" : restResourceRegistry.names()) + ")" //
-                + "(" + ((credentialsRegistry == null) ? "no credentials" : credentialsRegistry.uris()) + ")" //
+        return "context"
+                + "(" + ((restResourceRegistry == null) ? "no aliases" : restResourceRegistry.names()) + ")"
+                + "(" + ((credentialsRegistry == null) ? "no credentials" : credentialsRegistry.uris()) + ")"
                 ;
     }
 }
