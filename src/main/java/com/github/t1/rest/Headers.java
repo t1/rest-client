@@ -1,34 +1,34 @@
 package com.github.t1.rest;
 
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.annotation.*;
+import com.github.t1.rest.Headers.Header;
+import lombok.*;
+
+import javax.annotation.concurrent.Immutable;
+import javax.ws.rs.core.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.*;
+import java.util.Map.Entry;
+
 import static com.fasterxml.jackson.core.JsonToken.*;
-import static com.github.t1.rest.MethodExtensions.*;
+import static com.github.t1.rest.PathVariableExpression.*;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.ArrayList;
-import java.util.Map.Entry;
-
-import javax.annotation.concurrent.Immutable;
-import javax.ws.rs.core.*;
-
-import com.fasterxml.jackson.core.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.*;
-import com.github.t1.rest.Headers.Header;
-
-import lombok.*;
-
 @Immutable
 @Value
 @Getter(NONE)
 @JsonSerialize(using = Headers.HeadersSerializer.class)
 @JsonDeserialize(using = Headers.HeadersDeserializer.class)
-public class Headers implements Iterable<Header> {
+public class Headers implements Iterable<Header>, Serializable {
+    private static final long serialVersionUID = 1L;
+
     public static class HeadersSerializer extends JsonSerializer<Headers> {
         @Override
         public void serialize(Headers headers, JsonGenerator json, SerializerProvider serializers) throws IOException {
@@ -65,7 +65,9 @@ public class Headers implements Iterable<Header> {
 
     @Immutable
     @Value
-    public static class Header {
+    public static class Header implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         String name, value;
 
         public Header(String name, String value) {

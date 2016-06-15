@@ -1,26 +1,26 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.MethodExtensions.*;
-import static java.util.Arrays.*;
-import static lombok.AccessLevel.*;
-
-import java.net.URI;
-import java.util.List;
-import java.util.regex.*;
-
-import javax.annotation.concurrent.Immutable;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.adapters.*;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.github.t1.rest.UriAuthority.HostBasedAuthority;
-
 import lombok.*;
 import lombok.experimental.ExtensionMethod;
 
+import javax.annotation.concurrent.Immutable;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.*;
+import java.net.URI;
+import java.util.List;
+import java.util.regex.*;
+
+import static com.github.t1.rest.MethodExtensions.*;
+import static com.github.t1.rest.PathVariableExpression.*;
+import static java.util.Arrays.*;
+import static lombok.AccessLevel.*;
+
 /** Immutable, fluent, strictly appendable builder for URI templates. */
+@SuppressWarnings("ClassReferencesSubclass")
 @Immutable
 @RequiredArgsConstructor(access = PRIVATE)
 @ExtensionMethod(MethodExtensions.class)
@@ -30,7 +30,7 @@ import lombok.experimental.ExtensionMethod;
 @XmlJavaTypeAdapter(UriTemplate.JaxbAdapter.class)
 public abstract class UriTemplate {
     private static final Pattern URI_PATTERN =
-            Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(\\#(?<fragment>.*))?");
+            Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(#(?<fragment>.*))?");
 
     public static UriTemplate from(URI uri) {
         return fromString(uri.toString());
@@ -40,10 +40,10 @@ public abstract class UriTemplate {
     public static UriTemplate fromString(String uri) {
         Matcher matcher = URI_PATTERN.matcher(uri);
         if (!matcher.matches())
-            throw new IllegalArgumentException("unparseable uri: " + uri);
+            throw new IllegalArgumentException("non-parseable uri: " + uri);
 
-        NonFragment uriTemplate = UriScheme.of(matcher.group("scheme")) //
-                .schemeSpecificPart(matcher.group("schemeSpecificPart"));
+        NonFragment uriTemplate =
+                UriScheme.of(matcher.group("scheme")).schemeSpecificPart(matcher.group("schemeSpecificPart"));
         String fragment = matcher.group("fragment");
         if (fragment == null)
             return uriTemplate;
@@ -164,7 +164,7 @@ public abstract class UriTemplate {
         }
     }
 
-    @Immutable
+    // @Immutable
     public static abstract class NonPath extends NonQuery {
         NonPath(UriTemplate previous) {
             super(previous);
@@ -209,14 +209,6 @@ public abstract class UriTemplate {
             super(previous);
         }
 
-        protected String check(String path) {
-            if (path == null)
-                throw new IllegalArgumentException("path elements must not be null");
-            if (path.contains("/"))
-                throw new IllegalArgumentException("path elements must not contain slashes: " + path);
-            return path;
-        }
-
         @Override
         public UriPath path(String path) {
             return path(split(path));
@@ -246,9 +238,14 @@ public abstract class UriTemplate {
 
     @Immutable
     public static class RelativePath extends UriPath {
-        private RelativePath(NonPath previous, String path) {
+        private RelativePath(NonPath previous, @NonNull String path) {
             super(previous);
-            this.path = check(path);
+            this.path = checkNoSlashes(path);
+        }
+
+        private RelativePath(NonPath previous, PathVariableExpression expression) {
+            super(previous);
+            this.path = expression.resolve();
         }
 
         private final String path;
@@ -265,7 +262,8 @@ public abstract class UriTemplate {
 
         @Override
         public RelativePath with(String name, Object value) {
-            return new RelativePath((NonPath) previous.with(name, value), replaceVariable(path, name, value));
+            return new RelativePath((NonPath) previous.with(name, value),
+                    new PathVariableExpression(path, name, value));
         }
     }
 
@@ -274,9 +272,14 @@ public abstract class UriTemplate {
     public static class AbsolutePath extends UriPath {
         private final String path;
 
-        AbsolutePath(NonPath previous, String path) {
+        AbsolutePath(NonPath previous, @NonNull String path) {
             super(previous);
-            this.path = check(path);
+            this.path = checkNoSlashes(path);
+        }
+
+        public AbsolutePath(NonPath previous, PathVariableExpression expression) {
+            super(previous);
+            this.path = expression.resolve();
         }
 
         @Override
@@ -291,7 +294,8 @@ public abstract class UriTemplate {
 
         @Override
         public AbsolutePath with(String name, Object value) {
-            return new AbsolutePath((NonPath) previous.with(name, value), replaceVariable(path, name, value));
+            return new AbsolutePath((NonPath) previous.with(name, value),
+                    new PathVariableExpression(path, name, value));
         }
     }
 
@@ -300,9 +304,14 @@ public abstract class UriTemplate {
     public static class PathElement extends UriPath {
         private final String path;
 
-        private PathElement(UriPath previous, String path) {
+        private PathElement(UriPath previous, @NonNull String path) {
             super(previous);
-            this.path = check(path);
+            this.path = checkNoSlashes(path);
+        }
+
+        public PathElement(UriPath previous, PathVariableExpression expression) {
+            super(previous);
+            this.path = expression.resolve();
         }
 
         @Override
@@ -317,7 +326,7 @@ public abstract class UriTemplate {
 
         @Override
         public PathElement with(String name, Object value) {
-            return new PathElement((UriPath) previous.with(name, value), replaceVariable(path, name, value));
+            return new PathElement((UriPath) previous.with(name, value), new PathVariableExpression(path, name, value));
         }
     }
 
@@ -327,10 +336,10 @@ public abstract class UriTemplate {
         private final String key;
         private final String value;
 
-        private MatrixPath(UriPath previous, String key, String value) {
+        private MatrixPath(UriPath previous, @NonNull String key, String value) {
             super(previous);
-            this.key = check(key);
-            this.value = (value == null) ? null : check(value);
+            this.key = checkNoSlashes(key);
+            this.value = (value == null) ? null : checkNoSlashes(value);
         }
 
         @Override
@@ -345,13 +354,13 @@ public abstract class UriTemplate {
 
         @Override
         public MatrixPath with(String name, Object value) {
-            return new MatrixPath((UriPath) previous.with(name, value), //
-                    replaceVariable(this.key, name, value), //
+            return new MatrixPath((UriPath) previous.with(name, value),
+                    replaceVariable(this.key, name, value),
                     replaceVariable(this.value, name, value));
         }
     }
 
-    @Immutable
+    // @Immutable
     public static abstract class NonQuery extends NonFragment {
         private NonQuery(UriTemplate previous) {
             super(previous);
@@ -429,13 +438,13 @@ public abstract class UriTemplate {
 
         @Override
         public Query with(String name, Object value) {
-            return new Query(previous.with(name, value), //
-                    replaceVariable(this.key, name, value), //
+            return new Query(previous.with(name, value),
+                    replaceVariable(this.key, name, value),
                     replaceVariable(this.value, name, value));
         }
     }
 
-    @Immutable
+    // @Immutable
     public static abstract class NonFragment extends UriTemplate {
         private NonFragment(UriTemplate previous) {
             super(previous);
@@ -575,7 +584,7 @@ public abstract class UriTemplate {
     public abstract UriTemplate with(String name, Object value);
 
     public List<String> variables() {
-        return MethodExtensions.variables(toString());
+        return PathVariableExpression.variables(toString());
     }
 
     /** the string version of this part; for the complete uri, call {@link #toString()} or {@link #toUri()}. */

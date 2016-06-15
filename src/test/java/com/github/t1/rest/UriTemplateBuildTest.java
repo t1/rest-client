@@ -1,13 +1,14 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.UriTemplate.CommonScheme.*;
-import static org.junit.Assert.*;
+import com.github.t1.rest.UriTemplate.*;
+import org.junit.Test;
 
 import java.net.URI;
 
-import org.junit.Test;
-
-import com.github.t1.rest.UriTemplate.*;
+import static com.github.t1.rest.UriTemplate.CommonScheme.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class UriTemplateBuildTest {
     @Test
@@ -180,9 +181,18 @@ public class UriTemplateBuildTest {
         assertEquals("path/two", uri.get());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
+    public void shouldFailToBuildAbsolutePathNull() {
+        Throwable thrown = catchThrowable(() -> http.absolutePath(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessage("path");
+    }
+
+    @Test
     public void shouldFailToBuildRelativePathNull() {
-        file.relativePath((String) null);
+        Throwable thrown = catchThrowable(() -> file.relativePath(null));
+
+        assertThat(thrown).isInstanceOf(NullPointerException.class).hasMessage("path");
     }
 
     @Test(expected = IllegalArgumentException.class)

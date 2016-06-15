@@ -57,3 +57,9 @@ For the impatient:
 ```
 
 Or step-by-step in the executable [Tutorial](https://github.com/t1/rest-client/blob/master/src/test/java/com/github/t1/rest/TutorialTest.java).
+
+## Spec
+
+TODO
+
+A path variable starting with a star `*` allows values to contain slashes (which is normally vetoed).

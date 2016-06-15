@@ -1,19 +1,20 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.UriTemplateAssert.assertThat;
-import static org.junit.Assert.*;
-
+import com.github.t1.rest.UriTemplate.Fragment;
+import org.assertj.core.api.Assertions;
 import org.junit.*;
 
-import com.github.t1.rest.UriTemplate.Fragment;
+import static com.github.t1.rest.UriTemplateAssert.assertThat;
+import static org.assertj.core.api.Assertions.*;
+import static org.junit.Assert.*;
 
 public class UriTemplateVariableTest {
     @Test
     public void shouldFindTemplateVariables() {
         UriTemplate template = UriTemplate.fromString("{s}://{u}@{h}:{po}/{pa};{mk}={mv}?{qk}={qv}#{f}");
 
-        assertThat(template) //
-                .endsAs(Fragment.class) //
+        assertThat(template)
+                .endsAs(Fragment.class)
                 .hasVariables("s", "u", "h", "po", "pa", "mk", "mv", "qk", "qv", "f");
     }
 
@@ -117,6 +118,42 @@ public class UriTemplateVariableTest {
     }
 
     @Test
+    public void shouldFailToReplaceRelativePathVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("file:{p}/d?q=1");
+
+        Throwable thrown = catchThrowable(() -> template.with("p", "a/b/c"));
+
+        Assertions.assertThat(thrown).hasMessage("path elements must not contain slashes: a/b/c");
+    }
+
+    @Test
+    public void shouldReplaceRelativePathStarVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("file:{*p}/d?q=1");
+
+        UriTemplate uri = template.with("p", "a/b/c");
+
+        assertEquals("file:a/b/c/d?q=1", uri.toString());
+    }
+
+    @Test
+    public void shouldFailToReplacePathElementVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("file:a/{p}/e?q=1");
+
+        Throwable thrown = catchThrowable(() -> template.with("p", "b/c/d"));
+
+        Assertions.assertThat(thrown).hasMessage("path elements must not contain slashes: b/c/d");
+    }
+
+    @Test
+    public void shouldReplacePathElementStarVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("file:a/{*p}/e?q=1");
+
+        UriTemplate uri = template.with("p", "b/c/d");
+
+        assertEquals("file:a/b/c/d/e?q=1", uri.toString());
+    }
+
+    @Test
     public void shouldReplaceAbsolutePathVariable() {
         UriTemplate template = UriTemplate.fromString("http://example.org/{p}?q=1");
 
@@ -132,6 +169,24 @@ public class UriTemplateVariableTest {
         UriTemplate uri = template.with("p", 23).with("q", 45);
 
         assertEquals("http://example.org/23/45?q=1", uri.toString());
+    }
+
+    @Test
+    public void shouldFailReplaceAbsolutePathVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("http://example.org/{p}/d?q=1");
+
+        Throwable thrown = catchThrowable(() -> template.with("p", "a/b/c"));
+
+        Assertions.assertThat(thrown).hasMessage("path elements must not contain slashes: a/b/c");
+    }
+
+    @Test
+    public void shouldReplaceAbsolutePathStarVariableWithSlashes() {
+        UriTemplate template = UriTemplate.fromString("http://example.org/{*p}/d?q=1");
+
+        UriTemplate uri = template.with("p", "a/b/c");
+
+        assertEquals("http://example.org/a/b/c/d?q=1", uri.toString());
     }
 
     @Test
