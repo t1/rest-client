@@ -131,11 +131,12 @@ public class RestContext {
                 credentialsRegistry);
     }
 
+    @SuppressWarnings("deprecation")
     public <T> ResponseConverter<T> converterFor(Class<T> type) {
         return converterFor(type, (MediaType) null);
     }
 
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
     public <T> ResponseConverter<T> converterFor(Class<?> first, Class<?>... more) {
         ResponseConverter<T> result = converterFor((Class<T>) first, (MediaType) null);
         for (Class<?> m : more) {
@@ -224,7 +225,7 @@ public class RestContext {
         return createResource(UriTemplate.fromString(uri));
     }
 
-    public RestResource createResource(URI uri) {
+    public RestResource createResource(@NonNull URI uri) {
         return createResource(UriTemplate.from(uri));
     }
 

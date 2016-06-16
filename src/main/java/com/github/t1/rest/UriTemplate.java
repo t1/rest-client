@@ -32,7 +32,7 @@ public abstract class UriTemplate {
     private static final Pattern URI_PATTERN =
             Pattern.compile("((?<scheme>[a-zA-Z{][a-zA-Z0-9{}.+-]+):)?(?<schemeSpecificPart>.*?)(#(?<fragment>.*))?");
 
-    public static UriTemplate from(URI uri) {
+    public static UriTemplate from(@NonNull URI uri) {
         return fromString(uri.toString());
     }
 
