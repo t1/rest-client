@@ -1,15 +1,14 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestContext.*;
-import static java.util.Arrays.*;
+import lombok.Value;
 
+import javax.annotation.concurrent.Immutable;
+import javax.ws.rs.core.*;
 import java.net.URI;
 import java.util.List;
 
-import javax.annotation.concurrent.Immutable;
-import javax.ws.rs.core.MediaType;
-
-import lombok.Value;
+import static com.github.t1.rest.RestContext.*;
+import static java.util.Arrays.*;
 
 /**
  * Wraps the template for an http/https URI, where a resource is located, and a {@link RestContext context}. If you
@@ -70,8 +69,10 @@ public class RestResource {
         return request().accept(acceptedType);
     }
 
-    public RestRequest<?> accept(Class<?> first, Class<?>... more) {
-        return request().accept(first, more);
+    public RestRequest<?> accept(Class<?> first, Class<?>... more) { return request().accept(first, more); }
+
+    public <T> RestRequest<T> accept(GenericType<T> type) {
+        return null;
     }
 
     /**
@@ -131,7 +132,7 @@ public class RestResource {
     }
 
     @Override
-    public String toString() {
-        return uri.toString();
-    }
+    public String toString() { return uri.toString(); }
+
+    public EntityResponse POST() { return null; }
 }

@@ -17,6 +17,7 @@ import static com.fasterxml.jackson.core.JsonToken.*;
 import static com.github.t1.rest.PathVariableExpression.*;
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
+import static java.util.stream.Collectors.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static lombok.AccessLevel.*;
@@ -266,11 +267,7 @@ public class Headers implements Iterable<Header>, Serializable {
     }
 
     public List<MediaType> accept() {
-        List<MediaType> result = new ArrayList<>();
-        for (String value : values(ACCEPT)) {
-            result.add(MediaType.valueOf(value));
-        }
-        return result;
+        return values(ACCEPT).stream().map(MediaType::valueOf).collect(toList());
     }
 
     public boolean accepts(MediaType required) {

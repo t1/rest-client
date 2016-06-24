@@ -1,34 +1,32 @@
 package com.github.t1.rest;
 
-import static ch.qos.logback.classic.Level.*;
-import static com.github.t1.rest.fallback.InputStreamMessageBodyReader.*;
-import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
-import static java.util.Arrays.*;
-import static javax.ws.rs.core.MediaType.*;
-import static javax.ws.rs.core.Response.Status.*;
-import static javax.ws.rs.core.Response.Status.Family.*;
-import static lombok.AccessLevel.*;
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-
-import java.io.InputStream;
+import ch.qos.logback.classic.*;
+import com.github.t1.rest.fallback.ConverterTools;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.*;
+import org.jglue.cdiunit.CdiRunner;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.io.InputStream;
 
-import org.jglue.cdiunit.CdiRunner;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
-
-import com.github.t1.rest.fallback.ConverterTools;
-
-import ch.qos.logback.classic.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
-import lombok.*;
+import static ch.qos.logback.classic.Level.*;
+import static com.github.t1.rest.fallback.InputStreamMessageBodyReader.*;
+import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
+import static java.util.Arrays.*;
+import static java.util.Collections.*;
+import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.*;
+import static javax.ws.rs.core.Response.Status.Family.*;
+import static lombok.AccessLevel.*;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 @RunWith(CdiRunner.class)
 public class HttpGetTest {
@@ -483,7 +481,7 @@ public class HttpGetTest {
             fail("expected UnexpectedStatusException");
         } catch (UnexpectedStatusException e) {
             assertEquals(NO_CONTENT, e.actual());
-            assertEquals(asList(OK), e.expected());
+            assertEquals(singletonList(OK), e.expected());
             assertThat(e.getMessage(), containsString("expected status 200 OK but got 204 No Content"));
         }
     }

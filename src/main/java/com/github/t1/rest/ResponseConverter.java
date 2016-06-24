@@ -1,18 +1,17 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.VendorType.*;
-import static java.util.Locale.*;
-import static javax.ws.rs.core.MediaType.*;
-
-import java.io.InputStream;
-import java.util.*;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
+import java.io.InputStream;
+import java.util.*;
 
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import static com.github.t1.rest.VendorType.*;
+import static java.util.Locale.*;
+import static javax.ws.rs.core.MediaType.*;
 
 /**
  * Holds the java type that should be converted to and the converters to do the actual conversion for some content type
@@ -80,8 +79,7 @@ public class ResponseConverter<T> {
             MediaType mediaType = headers.contentType();
             MessageBodyReader<T> reader = converterFor(mediaType);
             MultivaluedMap<String, String> headerMap = headers.toMultiValuedMap();
-            T out = reader.readFrom(acceptedType, acceptedType, null, mediaType, headerMap, entityStream);
-            return out;
+            return reader.readFrom(acceptedType, acceptedType, null, mediaType, headerMap, entityStream);
         } catch (Exception e) {
             throw new RuntimeException("can't read: " + e.getMessage(), e);
         }

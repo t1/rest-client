@@ -1,8 +1,8 @@
 package com.github.t1.rest;
 
-import static java.lang.annotation.RetentionPolicy.*;
-
 import java.lang.annotation.Retention;
+
+import static java.lang.annotation.RetentionPolicy.*;
 
 /**
  * Annotation for a pojo that is supposed to be marshalled as a vendor type, i.e. instead of a generic content type like
@@ -12,7 +12,7 @@ import java.lang.annotation.Retention;
  */
 @Retention(RUNTIME)
 public @interface VendorType {
-    public static final String USE_CLASS_NAME = "###use-class-name###";
+    String USE_CLASS_NAME = "###use-class-name###";
 
     String value() default USE_CLASS_NAME;
 }

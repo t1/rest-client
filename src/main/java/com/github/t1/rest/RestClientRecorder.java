@@ -1,27 +1,25 @@
 package com.github.t1.rest;
 
-import static com.github.t1.rest.RestContext.*;
-import static java.nio.charset.StandardCharsets.*;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
 
+import javax.ws.rs.core.Response.Status;
 import java.io.*;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
 
-import javax.ws.rs.core.Response.Status;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import static com.github.t1.rest.RestContext.*;
+import static java.nio.charset.StandardCharsets.*;
 
 /**
  * Utility class for record and play back REST requests and their responses. Could be a JUnit rule, but we don't want to
  * have test dependencies at runtime.
- * 
+ *
  * @see RestClientMocker
  */
 @Slf4j
@@ -49,8 +47,7 @@ public class RestClientRecorder {
         }
 
         public static void clearAll() {
-            for (String authority : CACHE.keySet())
-                clear(authority);
+            CACHE.keySet().forEach(Recordings::clear);
         }
 
         @SneakyThrows(IOException.class)

@@ -1,16 +1,14 @@
 package com.github.t1.rest;
 
+import com.github.t1.rest.Headers.Header;
+import org.junit.Test;
+
+import javax.ws.rs.core.MediaType;
+import java.util.*;
+
 import static java.util.Arrays.*;
 import static javax.ws.rs.core.MediaType.*;
 import static org.junit.Assert.*;
-
-import java.util.*;
-
-import javax.ws.rs.core.MediaType;
-
-import org.junit.Test;
-
-import com.github.t1.rest.Headers.Header;
 
 public class HeadersTest {
     @Test(expected = IllegalArgumentException.class)
@@ -177,7 +175,7 @@ public class HeadersTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldFailToAddEmptyAcceptHeader() {
-        new Headers().accept(Collections.<MediaType> emptyList());
+        new Headers().accept(Collections.emptyList());
     }
 
     @Test

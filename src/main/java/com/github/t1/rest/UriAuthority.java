@@ -16,8 +16,8 @@ public abstract class UriAuthority extends NonPath {
 
     // http://www.ietf.org/rfc/rfc2396.txt ... some, probably esoteric cases are not supported
     private static final Pattern HOST_BASED_PATTERN = Pattern.compile(""
-            + "((?<userinfo>(([\\p{Alnum};:&=+$,%]+|\\{.+\\})).*)@)?"
-            + "(?<host>(([\\p{Alnum}.-]+|[0-9:.]+|\\{.+\\})))"
+            + "((?<userinfo>([\\p{Alnum};:&=+$,%]+|\\{.+\\}).*)@)?"
+            + "(?<host>([\\p{Alnum}.-]+|[0-9:.]+|\\{.+\\}))"
             + "(:(?<port>([0-9]+|\\{.+\\})))?"
             + "(?<more>[/?].*)?");
 
@@ -46,7 +46,7 @@ public abstract class UriAuthority extends NonPath {
         return authority.pathAndMore(matcher.group("more"));
     }
 
-    private static HostBasedAuthority hostBasedAuthority(NonAuthority scheme, Matcher matcher) {
+    private static UriAuthority hostBasedAuthority(NonAuthority scheme, Matcher matcher) {
         return new HostBasedAuthority(scheme, matcher.group("userinfo"))
                 .host(matcher.group("host"))
                 .port(matcher.group("port"));

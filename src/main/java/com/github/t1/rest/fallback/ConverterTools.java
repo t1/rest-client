@@ -1,13 +1,14 @@
 package com.github.t1.rest.fallback;
 
+import lombok.SneakyThrows;
+
+import javax.ws.rs.core.MediaType;
 import java.io.*;
 import java.nio.charset.Charset;
 
-import javax.ws.rs.core.MediaType;
-
-import lombok.SneakyThrows;
-
 public class ConverterTools {
+    private static final int K = 1024;
+
     public static boolean isConvertible(Class<?> type) {
         return type != String.class && !Closeable.class.isAssignableFrom(type);
     }
@@ -26,7 +27,7 @@ public class ConverterTools {
     @SneakyThrows(IOException.class)
     public static String readStringFrom(Reader reader) {
         StringBuilder out = new StringBuilder();
-        char[] buffer = new char[8 * 1024];
+        char[] buffer = new char[8 * K];
         while (true) {
             int length = reader.read(buffer);
             if (length < 0)

@@ -1,24 +1,23 @@
 package com.github.t1.rest;
 
-import static ch.qos.logback.classic.Level.*;
-import static javax.ws.rs.core.MediaType.*;
-import static javax.ws.rs.core.Response.Status.*;
-import static lombok.AccessLevel.*;
-import static org.junit.Assert.*;
+import ch.qos.logback.classic.*;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.*;
+import org.jglue.cdiunit.CdiRunner;
+import org.junit.*;
+import org.junit.runner.RunWith;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.jglue.cdiunit.CdiRunner;
-import org.junit.*;
-import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
-
-import ch.qos.logback.classic.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
-import lombok.*;
+import static ch.qos.logback.classic.Level.*;
+import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.*;
+import static lombok.AccessLevel.*;
+import static org.junit.Assert.*;
 
 @RunWith(CdiRunner.class)
 public class HttpPutTest {
@@ -91,7 +90,7 @@ public class HttpPutTest {
     public void shouldPutAsDefaultJson() {
         RestResponse response = base("text-plain").PUT(new Pojo("s", 123));
 
-        assertEquals("*hi*", response.expecting(OK).header("pong"));
+        assertEquals("*hi*", response.expecting(OK).header("pong").value());
     }
 
     @Test
@@ -99,6 +98,6 @@ public class HttpPutTest {
     public void shouldPutAsExplicitTextPlain() {
         RestResponse response = base("text-plain").PUT(TEXT_PLAIN_TYPE, "hi");
 
-        assertEquals("*hi*", response.expecting(OK).header("pong"));
+        assertEquals("*hi*", response.expecting(OK).header("pong").value());
     }
 }

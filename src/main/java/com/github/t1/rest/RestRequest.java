@@ -1,13 +1,12 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-
-import java.net.URI;
+import lombok.*;
 
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.MediaType;
+import java.net.URI;
 
-import lombok.*;
+import static javax.ws.rs.core.Response.Status.*;
 
 /**
  * A {@link RestResource} plus the {@link Headers} to be sent.
@@ -67,6 +66,10 @@ public class RestRequest<T> {
     public EntityResponse<T> GET_Response() {
         RestGetCall<T> request = context().createRestGetCall(uri(), headers, acceptedType());
         return request.execute();
+    }
+
+    public EntityResponse<T> POST() {
+        return null;
     }
 
     public Class<T> acceptedType() {

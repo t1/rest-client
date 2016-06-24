@@ -1,12 +1,11 @@
 package com.github.t1.rest;
 
+import com.github.t1.rest.Headers.Header;
+import lombok.*;
+
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.StatusType;
-
-import com.github.t1.rest.Headers.Header;
-
-import lombok.*;
 
 @Immutable
 @Data

@@ -1,15 +1,14 @@
 package com.github.t1.rest;
 
+import org.junit.Test;
+
+import javax.ws.rs.core.MultivaluedMap;
+import java.util.*;
+
 import static java.util.Arrays.*;
 import static java.util.Collections.*;
 import static javax.ws.rs.core.MediaType.*;
 import static org.junit.Assert.*;
-
-import java.util.*;
-
-import javax.ws.rs.core.MultivaluedMap;
-
-import org.junit.Test;
 
 public class HeadersMultivaluedMapTest {
     @Test
@@ -94,7 +93,7 @@ public class HeadersMultivaluedMapTest {
 
         map.add("Accept", TEXT_PLAIN);
 
-        assertEquals(asList(TEXT_PLAIN), map.get("Accept"));
+        assertEquals(singletonList(TEXT_PLAIN), map.get("Accept"));
     }
 
     @Test
@@ -114,7 +113,7 @@ public class HeadersMultivaluedMapTest {
 
         map.addFirst("Accept", TEXT_PLAIN);
 
-        assertEquals(asList(TEXT_PLAIN), map.get("Accept"));
+        assertEquals(singletonList(TEXT_PLAIN), map.get("Accept"));
     }
 
     @Test

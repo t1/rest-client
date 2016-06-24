@@ -1,14 +1,12 @@
 package com.github.t1.rest;
 
-import static java.util.Collections.*;
-
-import java.util.*;
+import com.github.t1.rest.Headers.Header;
+import lombok.*;
 
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.*;
 
-import com.github.t1.rest.Headers.Header;
-
-import lombok.AllArgsConstructor;
+import static java.util.Collections.*;
 
 /** Based on {@link Headers}; required for some JAX-RS calls; *not* strictly appendable */
 @AllArgsConstructor
@@ -67,7 +65,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
     }
 
     @Override
-    public void putAll(Map<? extends String, ? extends List<String>> map) {
+    public void putAll(@NonNull Map<? extends String, ? extends List<String>> map) {
         for (Map.Entry<? extends String, ? extends List<String>> entry : map.entrySet()) {
             put(entry.getKey(), entry.getValue());
         }
@@ -91,7 +89,7 @@ class HeadersMultivaluedMap implements MultivaluedMap<String, String> {
         Map<String, List<String>> map = new LinkedHashMap<>();
         for (Header header : headers) {
             String name = header.name();
-            List<String> list = (map.containsKey(name)) ? map.get(name) : new ArrayList<String>();
+            List<String> list = (map.containsKey(name)) ? map.get(name) : new ArrayList<>();
             list.add(header.value());
             map.put(name, list);
         }
