@@ -1,22 +1,18 @@
 package com.github.t1.rest;
 
-import ch.qos.logback.classic.*;
 import com.github.t1.rest.fallback.ConverterTools;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 import lombok.*;
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.InputStream;
 
-import static ch.qos.logback.classic.Level.*;
 import static com.github.t1.rest.fallback.InputStreamMessageBodyReader.*;
 import static com.github.t1.rest.fallback.YamlMessageBodyReader.*;
 import static java.util.Arrays.*;
@@ -29,7 +25,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 
 @RunWith(CdiRunner.class)
-public class HttpGetTest {
+public class HttpGetTest extends AbstractHttpMethodTest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
@@ -187,18 +183,6 @@ public class HttpGetTest {
         return new StaticRestResourceRegistry("other", new RestResource("http://twitter.com"));
     }
 
-    @Inject
-    RestContext rest;
-
-    @Before
-    public void before() {
-        setLogLevel("org.apache.http.wire", DEBUG);
-        setLogLevel("com.github.t1.rest", DEBUG);
-    }
-
-    private void setLogLevel(String loggerName, Level level) {
-        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
-    }
 
     private void givenCredentials() {
         rest = rest.register(base().uri().toUri(), new Credentials("user", "pass"));
@@ -240,7 +224,7 @@ public class HttpGetTest {
     public void shouldGetPingResponse() {
         EntityResponse<String> response = base("ping").accept(String.class).GET_Response();
 
-        assertEquals("pong", response.get());
+        assertEquals("pong", response.getBody());
         assertEquals("4", response.header("Content-Length").value());
         assertEquals(TEXT_PLAIN_TYPE, response.contentType());
         assertEquals((Integer) 4, response.contentLength());
@@ -250,7 +234,7 @@ public class HttpGetTest {
     public void shouldGetDirectPingResponse() {
         EntityResponse<String> response = base("ping").GET_Response(String.class);
 
-        assertEquals("pong", response.get());
+        assertEquals("pong", response.getBody());
     }
 
     @Test
@@ -384,7 +368,7 @@ public class HttpGetTest {
 
     @Test
     public void shouldGetUntypedPojo() {
-        Pojo pojo = base("pojo").GET_Response().get(Pojo.class);
+        Pojo pojo = base("pojo").GET_Response().getBody(Pojo.class);
 
         assertEquals("s", pojo.getString());
         assertEquals(123, pojo.getI());
@@ -393,7 +377,7 @@ public class HttpGetTest {
     @Test
     public void shouldGetTwoVendorTypesWithCommonBaseClass() {
         RestRequest<?> request = base("foopojo").accept(FooVendorTypePojo.class, DefaultVendorTypePojo.class);
-        FooVendorTypePojo pojo = request.GET_Response().get(FooVendorTypePojo.class);
+        FooVendorTypePojo pojo = request.GET_Response().getBody(FooVendorTypePojo.class);
 
         assertEquals("f", pojo.getString());
         assertEquals(345, pojo.getI());
@@ -407,19 +391,19 @@ public class HttpGetTest {
         EntityResponse<?> barResponse = request.with("path", "barpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
                 barResponse.contentType().toString());
-        BarVendorTypePojo bar = barResponse.get(BarVendorTypePojo.class);
+        BarVendorTypePojo bar = barResponse.getBody(BarVendorTypePojo.class);
         assertEquals("bar", bar.getString());
 
         EntityResponse<?> bazResponse = request.with("path", "bazpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$bazvendortypepojo+json",
                 bazResponse.contentType().toString());
-        BazVendorTypePojo baz = bazResponse.get(BazVendorTypePojo.class);
+        BazVendorTypePojo baz = bazResponse.getBody(BazVendorTypePojo.class);
         assertEquals(789, baz.getInteger());
 
         EntityResponse<?> bongResponse = request.with("path", "bongpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$bongvendortypepojo+json",
                 bongResponse.contentType().toString());
-        BongVendorTypePojo bong = bongResponse.get(BongVendorTypePojo.class);
+        BongVendorTypePojo bong = bongResponse.getBody(BongVendorTypePojo.class);
         assertEquals(true, bong.getBool());
     }
 
@@ -456,7 +440,7 @@ public class HttpGetTest {
         EntityResponse<String> response = base("authorized-pojo").GET_Response(String.class);
 
         assertEquals(UNAUTHORIZED, response.status());
-        assertNotNull(response.get());
+        assertNotNull(response.getBody());
     }
 
     @Test

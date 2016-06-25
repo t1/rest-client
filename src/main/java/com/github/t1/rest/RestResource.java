@@ -71,9 +71,7 @@ public class RestResource {
 
     public RestRequest<?> accept(Class<?> first, Class<?>... more) { return request().accept(first, more); }
 
-    public <T> RestRequest<T> accept(GenericType<T> type) {
-        return null;
-    }
+    public <T> RestRequest<T> accept(GenericType<T> type) { return request().accept(type); }
 
     /**
      * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
@@ -117,6 +115,10 @@ public class RestResource {
 
     public EntityResponse<Object> GET_Response() {
         return accept(Object.class).GET_Response();
+    }
+
+    public EntityResponse<Object> POST_Response() {
+        return accept(Object.class).POST_Response();
     }
 
     public <T> EntityResponse<T> GET_Response(Class<T> acceptedType) {

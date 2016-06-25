@@ -1,19 +1,18 @@
 package com.github.t1.rest;
 
-import java.io.IOException;
-import java.net.*;
-
-import javax.annotation.concurrent.Immutable;
-import javax.ws.rs.core.Response.*;
-import javax.ws.rs.core.Response.Status.Family;
-
+import lombok.*;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.methods.*;
 import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 
-import lombok.*;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.concurrent.Immutable;
+import javax.ws.rs.core.Response.*;
+import javax.ws.rs.core.Response.Status.Family;
+import java.io.IOException;
+import java.lang.annotation.Annotation;
+import java.net.*;
 
 @Immutable
 @Slf4j
@@ -37,15 +36,18 @@ abstract class RestCall {
     @Getter
     private final RestContext context;
     @Getter
+    private final Class<? extends Annotation> method;
+    @Getter
     private final URI uri;
     @Getter
     private final Headers requestHeaders;
     private final CloseableHttpClient apacheClient;
     private final HttpRequestBase request;
 
-    public RestCall(RestContext context, URI uri, Headers requestHeaders, CloseableHttpClient apacheClient,
-            HttpRequestBase request) {
+    public RestCall(RestContext context, Class<? extends Annotation> method, URI uri, Headers requestHeaders,
+            CloseableHttpClient apacheClient, HttpRequestBase request) {
         this.context = context;
+        this.method = method;
         this.uri = uri;
         this.requestHeaders = requestHeaders;
         this.apacheClient = apacheClient;

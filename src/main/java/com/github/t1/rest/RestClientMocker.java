@@ -1,25 +1,25 @@
 package com.github.t1.rest;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.t1.rest.fallback.JsonMessageBodyReader;
+import lombok.*;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response.Status;
+import java.lang.annotation.Annotation;
+import java.net.URI;
+import java.util.*;
+
 import static com.github.t1.rest.RestContext.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 
-import java.net.URI;
-import java.util.*;
-
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.t1.rest.fallback.JsonMessageBodyReader;
-
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
-
 /**
  * Utility class for programmatically simulating REST requests and their responses. Could be a JUnit rule, but we don't
  * want to have test dependencies at runtime.
- * 
+ *
  * @see RestClientRecorder
  */
 @Slf4j
@@ -54,9 +54,9 @@ public class RestClientMocker {
             return this;
         }
 
-        public <T> RestGetCall<T> createGetRequest(final RestContext context, URI uri, final Headers requestHeaders,
+        public <T> EntityRestCall<T> createGetRequest(final RestContext context, URI uri, final Headers requestHeaders,
                 final ResponseConverter<T> converter) {
-            return new RestGetCall<T>(context, uri, requestHeaders, null, converter) {
+            return new EntityRestCall<T>(context, GET.class, uri, requestHeaders, null, converter) {
                 private Headers responseHeaders = new Headers();
 
                 @Override
@@ -103,8 +103,8 @@ public class RestClientMocker {
     private final Map<URI, RequestMock> mockedUris = new LinkedHashMap<>();
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
-        public <T> RestGetCall<T> createRestGetCall(RestContext context, URI uri, Headers headers,
-                ResponseConverter<T> converter) {
+        public <T, M extends Annotation> EntityRestCall<T> createRestCall(Class<M> method, RestContext context, URI uri,
+                Headers headers, ResponseConverter<T> converter) {
             if (!mockedUris.containsKey(uri))
                 throw new IllegalArgumentException("unmocked createGetRequest on " + uri + "\n" //
                         + "only know: " + mockedUris.keySet());

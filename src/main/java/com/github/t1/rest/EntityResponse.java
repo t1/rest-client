@@ -1,9 +1,8 @@
 package com.github.t1.rest;
 
-import java.io.*;
-
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.core.Response.StatusType;
+import java.io.*;
 
 @Immutable
 public class EntityResponse<T> extends RestResponse {
@@ -23,11 +22,11 @@ public class EntityResponse<T> extends RestResponse {
         return this;
     }
 
-    public T get() {
+    public T getBody() {
         return converter.convert(inputStream(), headers());
     }
 
-    public <U> U get(Class<U> type) {
+    public <U> U getBody(Class<U> type) {
         ResponseConverter<U> otherConverter = context().converterFor(type);
         return otherConverter.convert(inputStream(), headers());
     }

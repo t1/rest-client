@@ -1,12 +1,12 @@
 package com.github.t1.rest;
 
-import static org.junit.Assert.*;
-
-import java.lang.reflect.Field;
-
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.junit.rules.ExternalResource;
+
+import java.lang.reflect.Field;
+
+import static org.junit.Assert.*;
 
 public class ApacheConfigRule extends ExternalResource {
     @Override
@@ -20,15 +20,16 @@ public class ApacheConfigRule extends ExternalResource {
     }
 
     public int getTotalConnections() {
-        return getInternalHttpClientField(PoolingHttpClientConnectionManager.class, "connManager").getTotalStats()
+        return getInternalHttpClient(PoolingHttpClientConnectionManager.class, "connManager")
+                .getTotalStats()
                 .getLeased();
     }
 
     public RequestConfig getRequestConfig() {
-        return getInternalHttpClientField(RequestConfig.class, "defaultConfig");
+        return getInternalHttpClient(RequestConfig.class, "defaultConfig");
     }
 
-    static <T> T getInternalHttpClientField(Class<T> type, String name) {
+    static <T> T getInternalHttpClient(Class<T> type, String name) {
         Object internalHttpClient = getField(null, RestCallFactory.class.getName(), "CLIENT");
         Object result = getField(internalHttpClient, "org.apache.http.impl.client.InternalHttpClient", name);
         return type.cast(result);
@@ -37,9 +38,9 @@ public class ApacheConfigRule extends ExternalResource {
     private static Object getField(Object object, String className, String fieldName) {
         try {
             Class<?> type = Class.forName(className);
-            Field connManagerField = type.getDeclaredField(fieldName);
-            connManagerField.setAccessible(true);
-            return connManagerField.get(object);
+            Field field = type.getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(object);
         } catch (ReflectiveOperationException e) {
             throw new RuntimeException(e);
         }

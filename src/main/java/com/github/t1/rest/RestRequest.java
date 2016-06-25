@@ -3,7 +3,8 @@ package com.github.t1.rest;
 import lombok.*;
 
 import javax.annotation.concurrent.Immutable;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.*;
+import javax.ws.rs.core.*;
 import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
@@ -52,7 +53,7 @@ public class RestRequest<T> {
 
 
     public T GET() {
-        return GET_Response().expecting(OK).get();
+        return GET_Response().expecting(OK).getBody();
     }
 
     public <U> U GET(Class<U> type) {
@@ -64,12 +65,21 @@ public class RestRequest<T> {
      * (as it indicates that a GET is executed), and anything else I could think of.
      */
     public EntityResponse<T> GET_Response() {
-        RestGetCall<T> request = context().createRestGetCall(uri(), headers, acceptedType());
+        EntityRestCall<T> request = context().createRestCall(GET.class, uri(), headers, acceptedType());
         return request.execute();
     }
 
-    public EntityResponse<T> POST() {
-        return null;
+    public T POST() {
+        return POST_Response().expecting(OK).getBody();
+    }
+
+    /**
+     * Execute a POST and return the {@link EntityResponse response object}. This method name is better than postResponse
+     * (as it indicates that a POST is executed), and anything else I could think of.
+     */
+    public EntityResponse<T> POST_Response() {
+        EntityRestCall<T> request = context().createRestCall(POST.class, uri(), headers, acceptedType());
+        return request.execute();
     }
 
     public Class<T> acceptedType() {
@@ -78,6 +88,10 @@ public class RestRequest<T> {
 
     public <U> RestRequest<U> accept(Class<U> acceptedType) {
         return entityRequest(resource.context().converterFor(acceptedType));
+    }
+
+    public <U> RestRequest<U> accept(GenericType<U> type) {
+        return entityRequest(resource.context().converterFor(type));
     }
 
     public <U> RestRequest<U> accept(Class<?> first, Class<?>... more) {

@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.core.Response.Status;
 import java.io.*;
+import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.nio.file.*;
 import java.util.*;
@@ -124,17 +125,18 @@ public class RestClientRecorder {
         }
 
         public boolean matches(URI uri, Headers requestHeaders, String requestBody) {
-            return this.uri.equals(uri) //
-                    && this.requestHeaders.equals(requestHeaders) //
+            return this.uri.equals(uri)
+                    && this.requestHeaders.equals(requestHeaders)
                     && Objects.equals(this.requestBody, requestBody);
         }
     }
 
-    private class RestGetCallDecorator<T> extends RestGetCall<T> {
-        private final RestGetCall<T> delegate;
+    private class EntityRestCallDecorator<T> extends EntityRestCall<T> {
+        private final EntityRestCall<T> delegate;
 
-        public RestGetCallDecorator(RestGetCall<T> delegate) {
-            super(delegate.context(), delegate.uri(), delegate.requestHeaders(), null, delegate.converter());
+        public EntityRestCallDecorator(EntityRestCall<T> delegate) {
+            super(delegate.context(), delegate.method(), delegate.uri(), delegate.requestHeaders(), null,
+                    delegate.converter());
             this.delegate = delegate;
         }
 
@@ -148,8 +150,8 @@ public class RestClientRecorder {
         }
     }
 
-    private class RecorderRestGetCall<T> extends RestGetCallDecorator<T> {
-        public RecorderRestGetCall(RestGetCall<T> delegate) {
+    private class RecorderEntityRestCall<T> extends EntityRestCallDecorator<T> {
+        public RecorderEntityRestCall(EntityRestCall<T> delegate) {
             super(delegate);
         }
 
@@ -163,7 +165,7 @@ public class RestClientRecorder {
 
             recording.responseStatus((Status) response.status()); // not perfect, but StatusType can't be deserialized
             recording.responseHeaders(response.headers());
-            recording.responseBody(response.get(String.class));
+            recording.responseBody(response.getBody(String.class));
 
             recordings().addOrReplace(recording).write();
 
@@ -172,8 +174,8 @@ public class RestClientRecorder {
         }
     }
 
-    private class PlaybackRestGetCall<T> extends RestGetCallDecorator<T> {
-        public PlaybackRestGetCall(RestGetCall<T> delegate) {
+    private class PlaybackEntityRestCall<T> extends EntityRestCallDecorator<T> {
+        public PlaybackEntityRestCall(EntityRestCall<T> delegate) {
             super(delegate);
         }
 
@@ -190,12 +192,12 @@ public class RestClientRecorder {
 
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
-        public <T> RestGetCall<T> createRestGetCall(RestContext context, URI uri, Headers headers,
-                ResponseConverter<T> converter) {
+        public <T, M extends Annotation> EntityRestCall<T> createRestCall(Class<M> method, RestContext context, URI uri,
+                Headers headers, ResponseConverter<T> converter) {
             log.info("create rest GET call for {}", uri);
-            return new PlaybackRestGetCall<>( //
-                    new RecorderRestGetCall<>( //
-                            originalRequestFactory.createRestGetCall(context, uri, headers, converter)));
+            return new PlaybackEntityRestCall<>(
+                    new RecorderEntityRestCall<>(
+                            originalRequestFactory.createRestCall(method, context, uri, headers, converter)));
         }
     };
 

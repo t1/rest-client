@@ -1,26 +1,23 @@
 package com.github.t1.rest;
 
-import ch.qos.logback.classic.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 import lombok.*;
 import org.jglue.cdiunit.CdiRunner;
 import org.junit.*;
 import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import static ch.qos.logback.classic.Level.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static lombok.AccessLevel.*;
 import static org.junit.Assert.*;
 
 @RunWith(CdiRunner.class)
-public class HttpPutTest {
+public class HttpPutTest extends AbstractHttpMethodTest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor(access = PRIVATE)
@@ -73,16 +70,6 @@ public class HttpPutTest {
 
     private RestResource base(String path) {
         return new RestResource(UriTemplate.fromString(service.baseUri() + "/" + path));
-    }
-
-    @Before
-    public void before() {
-        setLogLevel("org.apache.http.wire", DEBUG);
-        setLogLevel("com.github.t1.rest", DEBUG);
-    }
-
-    private void setLogLevel(String loggerName, Level level) {
-        ((Logger) LoggerFactory.getLogger(loggerName)).setLevel(level);
     }
 
     @Test

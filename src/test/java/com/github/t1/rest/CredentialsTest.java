@@ -1,13 +1,14 @@
 package com.github.t1.rest;
 
+import org.junit.Test;
+
+import javax.ws.rs.GET;
+import java.net.URI;
+
 import static com.github.t1.rest.RestContext.*;
 import static javax.xml.bind.DatatypeConverter.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.*;
-
-import java.net.URI;
-
-import org.junit.Test;
 
 public class CredentialsTest {
     private static final Credentials CREDENTIALS = new Credentials("foo", "bar");
@@ -177,7 +178,7 @@ public class CredentialsTest {
     public void shouldAddBasicAuthHeader() {
         givenCredentials();
 
-        RestGetCall<?> request = config.createRestGetCall(baseUri, new Headers(), String.class);
+        EntityRestCall<?> request = config.createRestCall(GET.class, baseUri, new Headers(), String.class);
 
         String auth = request.requestHeaders().firstValue("Authorization");
         assertEquals("Basic " + BASE64_CREDENTIALS, auth);

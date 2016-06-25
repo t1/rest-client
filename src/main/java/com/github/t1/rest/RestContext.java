@@ -8,8 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.concurrent.Immutable;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
-import javax.ws.rs.core.MediaType;
+import javax.ws.rs.HttpMethod;
+import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
+import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.*;
 
@@ -136,6 +138,11 @@ public class RestContext {
         return converterFor(type, (MediaType) null);
     }
 
+    @SuppressWarnings({ "deprecation", "unchecked" })
+    public <T> ResponseConverter<T> converterFor(GenericType<T> type) {
+        return converterFor((Class<T>) type.getRawType(), (MediaType) null);
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
     public <T> ResponseConverter<T> converterFor(Class<?> first, Class<?>... more) {
         ResponseConverter<T> result = converterFor((Class<T>) first, (MediaType) null);
@@ -172,12 +179,14 @@ public class RestContext {
         return new RestContext(readers, restCallFactory, restResourceRegistry, credentialsRegistry);
     }
 
-    public <T> RestGetCall<T> createRestGetCall(URI uri, Headers headers, Class<T> acceptedType) {
+    public <T, M extends Annotation> EntityRestCall<T> createRestCall(Class<M> method, URI uri, Headers headers,
+            Class<T> acceptedType) {
+        assert method.isAnnotationPresent(HttpMethod.class);
         Credentials credentials = getCredentials(uri);
         if (credentials != null)
             headers = headers.basicAuth(credentials);
         ResponseConverter<T> converter = converterFor(acceptedType);
-        return restCallFactory.createRestGetCall(this, uri, headers, converter);
+        return restCallFactory.createRestCall(method, this, uri, headers, converter);
     }
 
 

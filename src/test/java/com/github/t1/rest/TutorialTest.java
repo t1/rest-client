@@ -79,7 +79,7 @@ public class TutorialTest {
         EntityResponse<String> response = rest.resource("httpbin").GET_Response(String.class);
 
         assertEquals(UNAUTHORIZED, response.status());
-        assertEquals("", response.get());
+        assertEquals("", response.getBody());
     }
 
     /** the body returned by a successful http://httpbin.org/basic-auth */

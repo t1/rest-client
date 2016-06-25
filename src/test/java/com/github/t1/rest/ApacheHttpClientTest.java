@@ -1,26 +1,23 @@
 package com.github.t1.rest;
 
+import ch.qos.logback.classic.*;
+import com.fasterxml.jackson.core.JsonParseException;
+import io.dropwizard.testing.junit.DropwizardClientRule;
+import lombok.Data;
+import org.apache.http.client.config.RequestConfig;
+import org.junit.*;
+import org.slf4j.LoggerFactory;
+
+import javax.ws.rs.*;
+import javax.ws.rs.core.Response;
+import java.net.UnknownHostException;
+
 import static ch.qos.logback.classic.Level.*;
 import static javax.ws.rs.core.MediaType.*;
 import static javax.ws.rs.core.Response.Status.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.junit.Assume.*;
-
-import java.net.UnknownHostException;
-
-import javax.ws.rs.*;
-import javax.ws.rs.core.Response;
-
-import org.apache.http.client.config.RequestConfig;
-import org.junit.*;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonParseException;
-
-import ch.qos.logback.classic.*;
-import io.dropwizard.testing.junit.DropwizardClientRule;
-import lombok.Data;
 
 public class ApacheHttpClientTest {
     /**
@@ -139,7 +136,7 @@ public class ApacheHttpClientTest {
     @Test
     public void shouldCloseConnectionWhenAfterTheFactConversionFails() {
         try {
-            pojoResource().GET_Response().get(Pojo.class);
+            pojoResource().GET_Response().getBody(Pojo.class);
             fail("expected RuntimException");
         } catch (RuntimeException e) {
             assertThat(e.getCause(), instanceOf(JsonParseException.class));
