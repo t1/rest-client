@@ -7,6 +7,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.*;
 
 import static com.github.t1.rest.VendorType.*;
@@ -21,11 +22,13 @@ import static javax.ws.rs.core.MediaType.*;
 @Getter
 public class ResponseConverter<T> {
     private final Class<T> acceptedType;
+    private final Type genericType;
     private final VendorType vendorType;
     private final Map<MediaType, MessageBodyReader<T>> readers = new LinkedHashMap<>();
 
-    public ResponseConverter(Class<T> acceptedType) {
+    public ResponseConverter(Class<T> acceptedType, Type genericType) {
         this.acceptedType = acceptedType;
+        this.genericType = genericType;
         this.vendorType = acceptedType.getAnnotation(VendorType.class);
     }
 
@@ -79,7 +82,7 @@ public class ResponseConverter<T> {
             MediaType mediaType = headers.contentType();
             MessageBodyReader<T> reader = converterFor(mediaType);
             MultivaluedMap<String, String> headerMap = headers.toMultiValuedMap();
-            return reader.readFrom(acceptedType, acceptedType, null, mediaType, headerMap, entityStream);
+            return reader.readFrom(acceptedType, genericType, null, mediaType, headerMap, entityStream);
         } catch (Exception e) {
             throw new RuntimeException("can't read: " + e.getMessage(), e);
         }
@@ -88,7 +91,7 @@ public class ResponseConverter<T> {
     private MessageBodyReader<T> converterFor(MediaType expected) {
         for (MediaType actual : readers.keySet())
             if (expected.isCompatible(actual))
-                if (readers.get(actual).isReadable(acceptedType, acceptedType, null, actual))
+                if (readers.get(actual).isReadable(acceptedType, genericType, null, actual))
                     return readers.get(actual);
         throw new IllegalArgumentException("no converter for " + expected + " found in " + this.readers.keySet());
     }
@@ -97,7 +100,7 @@ public class ResponseConverter<T> {
         if (reader != null)
             for (MediaType supported : mediaTypes(reader))
                 if (vendored(supported).isCompatible(actual))
-                    if (reader.isReadable(acceptedType, acceptedType, null, actual))
+                    if (reader.isReadable(acceptedType, genericType, null, actual))
                         if (limitedType == null || limitedType.isCompatible(vendored(supported)))
                             return true;
         return false;
@@ -105,7 +108,6 @@ public class ResponseConverter<T> {
 
     @Override
     public String toString() {
-        return "Converter " + acceptedType.getName() + ((vendorType == null) ? "" : "/" + vendorType) //
-                + ": " + readers.keySet();
+        return "Converter[" + genericType + ((vendorType == null) ? "" : "/" + vendorType) + "]:" + readers;
     }
 }

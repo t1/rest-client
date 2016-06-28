@@ -12,6 +12,7 @@ import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.*;
 import javax.ws.rs.ext.MessageBodyReader;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.*;
 
@@ -134,20 +135,18 @@ public class RestContext {
     }
 
     @SuppressWarnings("deprecation")
-    public <T> ResponseConverter<T> converterFor(Class<T> type) {
-        return converterFor(type, (MediaType) null);
-    }
+    public <T> ResponseConverter<T> converterFor(Class<T> type) { return converterFor(type, type, null); }
 
     @SuppressWarnings({ "deprecation", "unchecked" })
     public <T> ResponseConverter<T> converterFor(GenericType<T> type) {
-        return converterFor((Class<T>) type.getRawType(), (MediaType) null);
+        return converterFor((Class<T>) type.getRawType(), type.getType(), null);
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
     public <T> ResponseConverter<T> converterFor(Class<?> first, Class<?>... more) {
-        ResponseConverter<T> result = converterFor((Class<T>) first, (MediaType) null);
+        ResponseConverter<T> result = converterFor((Class<T>) first, first, null);
         for (Class<?> m : more) {
-            ResponseConverter<?> converter = converterFor(m, (MediaType) null);
+            ResponseConverter<?> converter = converterFor(m, m, (MediaType) null);
             result.readers().putAll((Map) converter.readers());
         }
         return result;
@@ -159,13 +158,13 @@ public class RestContext {
      * complete or otherwise not useful for this request, so you need a different one.
      */
     @Deprecated
-    public <T> ResponseConverter<T> converterFor(Class<T> type, MediaType contentType) {
-        ResponseConverter<T> converter = new ResponseConverter<>(type);
+    public <T> ResponseConverter<T> converterFor(Class<T> type, Type genericType, MediaType contentType) {
+        ResponseConverter<T> converter = new ResponseConverter<>(type, genericType);
         for (MessageBodyReader<T> reader : this.<T>readers())
             converter.addIfReadable(reader, contentType);
         if (converter.mediaTypes().isEmpty())
             throw new IllegalArgumentException("no MessageBodyReader found for " + type);
-        log.debug("use converter {} for {}@{}", converter, type, contentType);
+        log.debug("use {} for {}", converter, contentType);
         return converter;
     }
 

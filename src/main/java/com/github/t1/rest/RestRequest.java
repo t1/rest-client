@@ -106,7 +106,7 @@ public class RestRequest<T> {
      */
     @Deprecated
     public <U> RestRequest<U> accept(Class<U> acceptedType, MediaType contentType) {
-        return entityRequest(resource.context().converterFor(acceptedType, contentType));
+        return entityRequest(resource.context().converterFor(acceptedType, acceptedType, contentType));
     }
 
     private <U> RestRequest<U> entityRequest(ResponseConverter<U> converter) {
