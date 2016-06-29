@@ -179,12 +179,12 @@ public class RestContext {
     }
 
     public <T, M extends Annotation> EntityRestCall<T> createRestCall(Class<M> method, URI uri, Headers headers,
-            Class<T> acceptedType) {
+            Class<T> acceptedType, Type genericType) {
         assert method.isAnnotationPresent(HttpMethod.class);
         Credentials credentials = getCredentials(uri);
         if (credentials != null)
             headers = headers.basicAuth(credentials);
-        ResponseConverter<T> converter = converterFor(acceptedType);
+        @SuppressWarnings("deprecation") ResponseConverter<T> converter = converterFor(acceptedType, genericType, null);
         return restCallFactory.createRestCall(method, this, uri, headers, converter);
     }
 

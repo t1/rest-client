@@ -5,6 +5,8 @@ import lombok.*;
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.*;
 import javax.ws.rs.core.*;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Type;
 import java.net.URI;
 
 import static javax.ws.rs.core.Response.Status.*;
@@ -64,10 +66,7 @@ public class RestRequest<T> {
      * Execute a GET and return the {@link EntityResponse response object}. This method name is better than getResponse
      * (as it indicates that a GET is executed), and anything else I could think of.
      */
-    public EntityResponse<T> GET_Response() {
-        EntityRestCall<T> request = context().createRestCall(GET.class, uri(), headers, acceptedType());
-        return request.execute();
-    }
+    public EntityResponse<T> GET_Response() { return createRestCall(GET.class).execute(); }
 
     public T POST() {
         return POST_Response().expecting(OK).getBody();
@@ -77,14 +76,15 @@ public class RestRequest<T> {
      * Execute a POST and return the {@link EntityResponse response object}. This method name is better than postResponse
      * (as it indicates that a POST is executed), and anything else I could think of.
      */
-    public EntityResponse<T> POST_Response() {
-        EntityRestCall<T> request = context().createRestCall(POST.class, uri(), headers, acceptedType());
-        return request.execute();
+    public EntityResponse<T> POST_Response() { return createRestCall(POST.class).execute(); }
+
+    public EntityRestCall<T> createRestCall(Class<? extends Annotation> method) {
+        return context().createRestCall(method, uri(), headers, acceptedType(), genericType());
     }
 
-    public Class<T> acceptedType() {
-        return (converter == null) ? null : converter.acceptedType();
-    }
+    public Class<T> acceptedType() { return (converter == null) ? null : converter.acceptedType(); }
+
+    public Type genericType() { return (converter == null) ? null : converter.genericType(); }
 
     public <U> RestRequest<U> accept(Class<U> acceptedType) {
         return entityRequest(resource.context().converterFor(acceptedType));

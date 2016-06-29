@@ -178,7 +178,8 @@ public class CredentialsTest {
     public void shouldAddBasicAuthHeader() {
         givenCredentials();
 
-        EntityRestCall<?> request = config.createRestCall(GET.class, baseUri, new Headers(), String.class);
+        EntityRestCall<?> request = config.createRestCall(GET.class, baseUri, new Headers(),
+                String.class, String.class);
 
         String auth = request.requestHeaders().firstValue("Authorization");
         assertEquals("Basic " + BASE64_CREDENTIALS, auth);
