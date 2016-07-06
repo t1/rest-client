@@ -40,9 +40,15 @@ public class RestClientMocker {
     public static class RequestMock {
         private Credentials requiredBasicAuthCredentials;
         private Object object;
+        private MediaType objectMediaType = TEXT_PLAIN_TYPE;
 
         public void respond(Object object) {
             this.object = object;
+        }
+
+        public void respond(Object object, MediaType objectMediaType) {
+            this.object = object;
+            this.objectMediaType = objectMediaType;
         }
 
         public RequestMock requireBasicAuth(String username, String password) {
@@ -73,8 +79,8 @@ public class RestClientMocker {
 
                 @SneakyThrows(JsonProcessingException.class)
                 private byte[] body(Object object) {
-                    if (object instanceof String && requestHeaders.accepts(TEXT_PLAIN_TYPE)) {
-                        contentType(TEXT_PLAIN_TYPE);
+                    if (object instanceof String && requestHeaders.accepts(objectMediaType)) {
+                        contentType(objectMediaType);
                         return ((String) object).getBytes();
                     }
                     if (requestHeaders.accepts(APPLICATION_JSON_TYPE)) {

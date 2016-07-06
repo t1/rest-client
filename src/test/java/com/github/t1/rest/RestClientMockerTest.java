@@ -1,13 +1,13 @@
 package com.github.t1.rest;
 
-import static javax.ws.rs.core.Response.Status.*;
-import static org.junit.Assert.*;
+import lombok.*;
+import org.junit.Test;
 
 import java.net.URI;
 
-import org.junit.Test;
-
-import lombok.*;
+import static javax.ws.rs.core.MediaType.*;
+import static javax.ws.rs.core.Response.Status.*;
+import static org.junit.Assert.*;
 
 public class RestClientMockerTest {
     private static final URI BASE = URI.create("http://example.mock");
@@ -45,6 +45,24 @@ public class RestClientMockerTest {
     @Test
     public void shouldGetPojo() {
         mock.on(BASE + "/pojo").GET().respond(POJO);
+
+        Pojo value = rest.createResource(BASE + "/pojo").GET(Pojo.class);
+
+        assertEquals(POJO, value);
+    }
+
+    @Test
+    public void shouldGetTextPlainString() {
+        mock.on(BASE + "/pojo").GET().respond("some text");
+
+        String value = rest.createResource(BASE + "/pojo").GET(String.class);
+
+        assertEquals("some text", value);
+    }
+
+    @Test
+    public void shouldGetPojoApplicationJsonString() {
+        mock.on(BASE + "/pojo").GET().respond("{\"key\":\"k\",\"value\":\"v\"}", APPLICATION_JSON_TYPE);
 
         Pojo value = rest.createResource(BASE + "/pojo").GET(Pojo.class);
 
