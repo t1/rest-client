@@ -182,13 +182,10 @@ public abstract class UriTemplate {
 
         @Override
         public NonQuery path(String path) {
-            boolean isAbsolute = path.startsWith("/");
-            if (isAbsolute)
-                path = path.substring(1);
             List<String> split = split(path);
             String head = head(split);
             String[] headAndMatrix = head.split(";", 2);
-            UriPath result = isAbsolute ? absolutePath(headAndMatrix[0]) : relativePath(headAndMatrix[0]);
+            UriPath result = (host() != null) ? absolutePath(headAndMatrix[0]) : relativePath(headAndMatrix[0]);
             if (headAndMatrix.length > 1)
                 result = result.parseMatrix(headAndMatrix[1]);
             return result.path(tail(split));

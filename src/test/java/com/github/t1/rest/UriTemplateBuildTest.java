@@ -201,6 +201,14 @@ public class UriTemplateBuildTest {
     }
 
     @Test
+    public void shouldBuildWithHostAndPath() {
+        UriTemplate uri = http.host("host").path("path");
+
+        assertEquals("http://host/path", uri.toString());
+        assertEquals("/path", uri.get());
+    }
+
+    @Test
     public void shouldBuildWithPath() {
         UriTemplate uri = http.absolutePath("path");
 
