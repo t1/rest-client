@@ -1,9 +1,9 @@
 package com.github.t1.rest;
 
+import java.net.URI;
+
 import static java.util.Arrays.*;
 import static org.junit.Assert.*;
-
-import java.net.URI;
 
 public class UriTemplateAssert {
     public static UriTemplateAssert assertThat(UriTemplate template) {
@@ -71,6 +71,11 @@ public class UriTemplateAssert {
 
     public UriTemplateAssert isNotOpaque() {
         assertFalse("is not opaque", template.isOpaque());
+        return this;
+    }
+
+    public UriTemplateAssert isAbsolute() {
+        assertTrue("is absolute", template.isAbsolute());
         return this;
     }
 
