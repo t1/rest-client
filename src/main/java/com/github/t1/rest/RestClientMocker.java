@@ -105,7 +105,7 @@ public class RestClientMocker {
     }
 
     @Getter
-    private final RestContext context;
+    private RestContext context;
     private final Map<URI, RequestMock> mockedUris = new LinkedHashMap<>();
     public RestCallFactory requestFactoryMock = new RestCallFactory() {
         @Override
@@ -125,6 +125,11 @@ public class RestClientMocker {
 
     public RestClientMocker(RestContext context) {
         this.context = context.restCallFactory(requestFactoryMock);
+    }
+
+    public RestClientMocker register(String alias, URI uri) {
+        this.context = this.context.register(alias, uri);
+        return this;
     }
 
     public ResourceMock on(String uri) {

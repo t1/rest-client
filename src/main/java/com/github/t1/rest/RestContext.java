@@ -215,7 +215,7 @@ public class RestContext {
 
     public UriTemplate uri(String alias) {
         if (restResourceRegistry == null)
-            throw new IllegalStateException("no uris registered when looking for alias " + alias);
+            throw new IllegalStateException("no uris registered when looking for alias '" + alias + "'");
         RestResource resource = restResourceRegistry.get(alias);
         if (resource == null)
             throw new IllegalStateException("no uri registered for resource " + alias);
