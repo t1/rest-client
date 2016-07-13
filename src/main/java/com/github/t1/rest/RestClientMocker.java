@@ -11,6 +11,7 @@ import javax.ws.rs.core.Response.Status;
 import java.lang.annotation.Annotation;
 import java.net.URI;
 import java.util.*;
+import java.util.function.Supplier;
 
 import static com.github.t1.rest.RestContext.*;
 import static javax.ws.rs.core.MediaType.*;
@@ -39,16 +40,16 @@ public class RestClientMocker {
 
     public static class RequestMock {
         private Credentials requiredBasicAuthCredentials;
-        private Object object;
-        private MediaType objectMediaType = TEXT_PLAIN_TYPE;
+        private MediaType responseContentType = TEXT_PLAIN_TYPE;
+        private Supplier<Object> bodySupplier;
 
         public void respond(Object object) {
-            this.object = object;
+            this.bodySupplier = () -> object;
         }
 
         public void respond(Object object, MediaType objectMediaType) {
-            this.object = object;
-            this.objectMediaType = objectMediaType;
+            this.bodySupplier = () -> object;
+            this.responseContentType = objectMediaType;
         }
 
         public RequestMock requireBasicAuth(String username, String password) {
@@ -60,7 +61,12 @@ public class RestClientMocker {
             return this;
         }
 
-        public <T> EntityRestCall<T> createGetRequest(final RestContext context, URI uri, final Headers requestHeaders,
+        public RequestMock produceBody(Supplier<Object> supplier) {
+            this.bodySupplier = supplier;
+            return this;
+        }
+
+        private <T> EntityRestCall<T> createGetRequest(final RestContext context, URI uri, final Headers requestHeaders,
                 final ResponseConverter<T> converter) {
             return new EntityRestCall<T>(context, GET.class, uri, requestHeaders, null, converter) {
                 private Headers responseHeaders = new Headers();
@@ -70,7 +76,7 @@ public class RestClientMocker {
                     if (requiredBasicAuthCredentials != null)
                         if (!requestHeaders.isBasicAuth(requiredBasicAuthCredentials))
                             return response(UNAUTHORIZED, body(""));
-                    return response(OK, body(object));
+                    return response(OK, body(bodySupplier.get()));
                 }
 
                 private EntityResponse<T> response(Status status, byte[] body) {
@@ -79,8 +85,8 @@ public class RestClientMocker {
 
                 @SneakyThrows(JsonProcessingException.class)
                 private byte[] body(Object object) {
-                    if (object instanceof String && requestHeaders.accepts(objectMediaType)) {
-                        contentType(objectMediaType);
+                    if (object instanceof String && requestHeaders.accepts(responseContentType)) {
+                        contentType(responseContentType);
                         return ((String) object).getBytes();
                     }
                     if (requestHeaders.accepts(APPLICATION_JSON_TYPE)) {
@@ -100,7 +106,7 @@ public class RestClientMocker {
         @Override
         public String toString() {
             return "request-mock" + ((requiredBasicAuthCredentials == null) ? "" : " requiring auth") //
-                    + " returning " + object;
+                    + " returning " + responseContentType;
         }
     }
 
