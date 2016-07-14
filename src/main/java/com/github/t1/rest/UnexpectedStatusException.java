@@ -1,12 +1,12 @@
 package com.github.t1.rest;
 
-import static java.util.Arrays.*;
-
-import java.util.List;
+import lombok.Getter;
 
 import javax.ws.rs.core.Response.StatusType;
+import java.util.List;
 
-import lombok.Getter;
+import static java.util.Arrays.*;
+import static java.util.stream.Collectors.*;
 
 @Getter
 public class UnexpectedStatusException extends RuntimeException {
@@ -14,33 +14,36 @@ public class UnexpectedStatusException extends RuntimeException {
 
     private final StatusType actual;
     private final Headers headers;
+    private String body;
     private final List<StatusType> expected;
 
     public UnexpectedStatusException(StatusType actual, Headers headers, StatusType... expected) {
         this(actual, headers, asList(expected));
     }
 
+    public UnexpectedStatusException(StatusType actual, Headers headers, String body, StatusType... expected) {
+        this(actual, headers, body, asList(expected));
+    }
+
     public UnexpectedStatusException(StatusType actual, Headers headers, List<StatusType> expected) {
+        this(actual, headers, null, expected);
+    }
+
+    public UnexpectedStatusException(StatusType actual, Headers headers, String body, List<StatusType> expected) {
         this.actual = actual;
         this.headers = headers;
+        this.body = body;
         this.expected = expected;
     }
 
     @Override
     public String getMessage() {
-        return "expected status " + toString(expected) + " but got " + toString(actual) + "\n" + headers.toListString();
+        return "expected status " + toString(expected) + " but got [" + toString(actual) + "]\n"
+                + headers.toListString() + ((body == null) ? "" : "\n" + body);
     }
 
     private static String toString(List<StatusType> statusTypes) {
-        if (statusTypes.size() == 1)
-            return toString(statusTypes.get(0));
-        StringBuilder out = new StringBuilder();
-        for (StatusType statusType : statusTypes) {
-            out.append(out.length() == 0 ? "[" : ",");
-            out.append(toString(statusType));
-        }
-        out.append("]");
-        return out.toString();
+        return statusTypes.stream().map(UnexpectedStatusException::toString).collect(joining(", ", "[", "]"));
     }
 
     private static String toString(StatusType status) {
