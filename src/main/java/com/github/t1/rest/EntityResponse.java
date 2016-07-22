@@ -22,16 +22,18 @@ public class EntityResponse<T> extends RestResponse {
         return this;
     }
 
+    @Override protected UnexpectedStatusException unexpectedStatusException(StatusType[] expectedTypes) {
+        return new UnexpectedStatusException(status(), headers(), getBody(String.class), expectedTypes);
+    }
+
     public T getBody() {
-        return converter.convert(inputStream(), headers());
+        return (body == null) ? null : converter.convert(inputStream(), headers());
     }
 
     public <U> U getBody(Class<U> type) {
         ResponseConverter<U> otherConverter = context().converterFor(type);
-        return otherConverter.convert(inputStream(), headers());
+        return (body == null) ? null : otherConverter.convert(inputStream(), headers());
     }
 
-    private InputStream inputStream() {
-        return new ByteArrayInputStream(body);
-    }
+    private InputStream inputStream() { return new ByteArrayInputStream(body); }
 }

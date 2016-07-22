@@ -20,7 +20,11 @@ public abstract class RestResponse {
         for (StatusType expectedType : expectedTypes)
             if (status.getStatusCode() == expectedType.getStatusCode())
                 return this;
-        throw new UnexpectedStatusException(status, headers, expectedTypes);
+        throw unexpectedStatusException(expectedTypes);
+    }
+
+    protected UnexpectedStatusException unexpectedStatusException(StatusType[] expectedTypes) {
+        return new UnexpectedStatusException(status, headers, expectedTypes);
     }
 
     public Header header(String name) {

@@ -158,6 +158,12 @@ public class HttpGetTest extends AbstractHttpMethodTest {
         }
 
         @GET
+        @Path("/not-found")
+        public Response notFound() {
+            return Response.status(NOT_FOUND).entity("this is not here").type(TEXT_PLAIN_TYPE).build();
+        }
+
+        @GET
         @Path("/zombie-apocalypse")
         public Response zombieAcopalypse() {
             return Response.status(793).build();
@@ -385,8 +391,9 @@ public class HttpGetTest extends AbstractHttpMethodTest {
 
     @Test
     public void shouldGetThreeVendorTypesWithoutCommonBaseClass() {
-        RestRequest<?> request = base("{path}") //
-                .accept(BarVendorTypePojo.class, BazVendorTypePojo.class, BongVendorTypePojo.class);
+        RestRequest<?> request = base("{path}")
+                .accept(BarVendorTypePojo.class, BazVendorTypePojo.class,
+                        BongVendorTypePojo.class);
 
         EntityResponse<?> barResponse = request.with("path", "barpojo").GET_Response();
         assertEquals("application/vnd.com.github.t1.rest.httpgettest$barvendortypepojo+json",
@@ -461,12 +468,14 @@ public class HttpGetTest extends AbstractHttpMethodTest {
     @Test
     public void shouldExpectOk() {
         try {
-            base("no-content").GET(String.class);
+            base("not-found").GET(String.class);
             fail("expected UnexpectedStatusException");
         } catch (UnexpectedStatusException e) {
-            assertEquals(NO_CONTENT, e.actual());
+            assertEquals(NOT_FOUND, e.actual());
             assertEquals(singletonList(OK), e.expected());
-            assertThat(e.getMessage(), containsString("expected status 200 OK but got 204 No Content"));
+            assertThat(e.getMessage(), containsString("expected status [200 OK] but got [404 Not Found]"));
+            assertThat(e.getMessage(), containsString("Date:")); // header
+            assertThat(e.getMessage(), containsString("this is not here")); // body
         }
     }
 
