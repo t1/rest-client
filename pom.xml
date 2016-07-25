@@ -4,7 +4,7 @@
 
     <groupId>com.github.t1</groupId>
     <artifactId>rest-client</artifactId>
-    <version>1.0.9-SNAPSHOT</version>
+    <version>1.0.10-SNAPSHOT</version>
 
     <name>Rest-Client</name>
     <description>Immutable, fluent, strictly appendable builder for clients of RESTful web services.</description>
@@ -25,13 +25,13 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-    <!--<distributionManagement>-->
-    <!--<repository>-->
-    <!--<id>bintray-t1-javaee-helpers</id>-->
-    <!--<name>t1-javaee-helpers</name>-->
-    <!--<url>https://api.bintray.com/maven/t1/javaee-helpers/rest-client</url>-->
-    <!--</repository>-->
-    <!--</distributionManagement>-->
+    <distributionManagement>
+        <repository>
+            <id>bintray-t1-javaee-helpers</id>
+            <name>t1-javaee-helpers</name>
+            <url>https://api.bintray.com/maven/t1/javaee-helpers/rest-client</url>
+        </repository>
+    </distributionManagement>
 
     <build>
         <finalName>${project.artifactId}</finalName>
