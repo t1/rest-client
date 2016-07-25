@@ -9,7 +9,7 @@ import javax.annotation.concurrent.Immutable;
 import javax.enterprise.inject.Instance;
 import javax.inject.Inject;
 import javax.ws.rs.HttpMethod;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.ext.MessageBodyReader;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
@@ -137,10 +137,11 @@ public class RestContext {
     @SuppressWarnings("deprecation")
     public <T> ResponseConverter<T> converterFor(Class<T> type) { return converterFor(type, type, null); }
 
-    @SuppressWarnings({ "deprecation", "unchecked" })
-    public <T> ResponseConverter<T> converterFor(GenericType<T> type) {
-        return converterFor((Class<T>) type.getRawType(), type.getType(), null);
-    }
+    // TODO JAX-RS 2.0:
+    // @SuppressWarnings({ "deprecation", "unchecked" })
+    // public <T> ResponseConverter<T> converterFor(GenericType<T> type) {
+    //     return converterFor((Class<T>) type.getRawType(), type.getType(), null);
+    // }
 
     @SuppressWarnings({ "unchecked", "rawtypes", "deprecation" })
     public <T> ResponseConverter<T> converterFor(Class<?> first, Class<?>... more) {

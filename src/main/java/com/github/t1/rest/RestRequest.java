@@ -4,7 +4,7 @@ import lombok.*;
 
 import javax.annotation.concurrent.Immutable;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
 import java.net.URI;
@@ -90,9 +90,10 @@ public class RestRequest<T> {
         return entityRequest(resource.context().converterFor(acceptedType));
     }
 
-    public <U> RestRequest<U> accept(GenericType<U> type) {
-        return entityRequest(resource.context().converterFor(type));
-    }
+    // TODO JAX-RS 2.0:
+    // public <U> RestRequest<U> accept(GenericType<U> type) {
+    //     return entityRequest(resource.context().converterFor(type));
+    // }
 
     public <U> RestRequest<U> accept(Class<?> first, Class<?>... more) {
         ResponseConverter<U> otherConverter = resource.context().converterFor(first, more);

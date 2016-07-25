@@ -3,7 +3,7 @@ package com.github.t1.rest;
 import lombok.Value;
 
 import javax.annotation.concurrent.Immutable;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.MediaType;
 import java.net.URI;
 import java.util.List;
 
@@ -71,7 +71,8 @@ public class RestResource {
 
     public RestRequest<?> accept(Class<?> first, Class<?>... more) { return request().accept(first, more); }
 
-    public <T> RestRequest<T> accept(GenericType<T> type) { return request().accept(type); }
+    // TODO JAX-RS 2.0:
+    // public <T> RestRequest<T> accept(GenericType<T> type) { return request().accept(type); }
 
     /**
      * Normally you wouldn't call this directly: the acceptable types are determined by the readers available for the
