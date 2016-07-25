@@ -4,7 +4,7 @@
 
     <groupId>com.github.t1</groupId>
     <artifactId>rest-client</artifactId>
-    <version>1.0.7-SNAPSHOT</version>
+    <version>1.0.8-SNAPSHOT</version>
 
     <name>Rest-Client</name>
     <description>Immutable, fluent, strictly appendable builder for clients of RESTful web services.</description>
