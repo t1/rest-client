@@ -1,4 +1,8 @@
 node {
+    stage 'Checkout'
+
+    git url: 'https://github.com/t1/rest-client.git'
+
     def mvnHome = tool 'M3'
 
     stage 'Package'
