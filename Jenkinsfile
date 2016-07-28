@@ -1,7 +1,6 @@
 node {
     stage 'Checkout'
-
-    git url: 'https://github.com/t1/rest-client.git'
+    checkout scm
 
     def mvnHome = tool 'M3'
 
