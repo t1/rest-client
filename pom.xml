@@ -1,10 +1,9 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.t1</groupId>
     <artifactId>rest-client</artifactId>
-    <version>1.0.12-SNAPSHOT</version>
+    <version>1.0.12</version>
 
     <name>Rest-Client</name>
     <description>Immutable, fluent, strictly appendable builder for clients of RESTful web services.</description>
@@ -16,7 +15,7 @@
 
     <scm>
         <developerConnection>scm:git:https://github.com/t1/rest-client</developerConnection>
-        <tag>HEAD</tag>
+        <tag>rest-client-1.0.12</tag>
     </scm>
     <licenses>
         <license>
