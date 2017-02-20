@@ -1,5 +1,6 @@
 package com.github.t1.rest;
 
+import com.github.t1.rest.fallback.YamlMessageBodyWriter;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 import lombok.*;
 import org.jglue.cdiunit.CdiRunner;

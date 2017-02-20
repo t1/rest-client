@@ -1,6 +1,6 @@
 package com.github.t1.rest;
 
-import com.github.t1.rest.fallback.ConverterTools;
+import com.github.t1.rest.fallback.*;
 import io.dropwizard.testing.junit.DropwizardClientRule;
 import lombok.*;
 import org.jglue.cdiunit.CdiRunner;
@@ -8,6 +8,7 @@ import org.junit.*;
 import org.junit.runner.RunWith;
 
 import javax.ws.rs.*;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.StatusType;
 import javax.xml.bind.annotation.XmlRootElement;
