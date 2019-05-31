@@ -12,7 +12,7 @@
     <description>Immutable, fluent, strictly appendable builder for clients of RESTful web services.</description>
 
     <properties>
-        <jackson.version>2.9.8</jackson.version>
+        <jackson.version>2.9.9</jackson.version>
         <http-client.version>4.5.7</http-client.version>
     </properties>
 
